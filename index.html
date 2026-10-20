@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261013" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20261013" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20261013" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Les Heures Flâneuses — Lifestyle &amp; tech : tests et avis sincères sur les montres, les accessoires, les loisirs et les objets connectés, pour choisir mieux et vivre à son rythme." />
+  <link rel="canonical" href="https://lesheuresflaneuses.fr/" />
+  <title>Les Heures Flâneuses — Lifestyle &amp; Tech</title>
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://lesheuresflaneuses.fr/" />
+  <meta property="og:title"       content="Les Heures Flâneuses — Lifestyle &amp; Tech" />
+  <meta property="og:description" content="Lifestyle &amp; tech — des tests et des avis sincères pour vivre mieux." />
+  <meta property="og:image"       content="https://lesheuresflaneuses.fr/og-cover.jpg" />
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Les Heures Flâneuses — Lifestyle &amp; Tech" />
+  <meta name="twitter:description" content="Lifestyle &amp; tech — des tests et des avis sincères pour vivre mieux." />
+  <meta name="twitter:image"       content="https://lesheuresflaneuses.fr/og-cover.jpg" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Les Heures Flâneuses",
+    "url": "https://lesheuresflaneuses.fr/",
+    "logo": "https://lesheuresflaneuses.fr/images/logo/logo-512.png"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Les Heures Flâneuses",
+    "url": "https://lesheuresflaneuses.fr/"
+  }
+  </script>
+
+  <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);}</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-39RE8T7LE5"></script>
+  <script>gtag('js', new Date()); gtag('config', 'G-39RE8T7LE5');</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="/tailwind.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css?v=20261015" />
+  <script src="/time-ambience.js"></script>
+  <script src="/subcats.js?v=20261013"></script>
+  <script src="/nav.js?v=20261014" defer></script>
+
+  <style>
+    /* Popup newsletter */
+    #np-overlay {
+      position: fixed; inset: 0; background: rgba(24,20,17,.65); backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 200;
+      opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s;
+    }
+    #np-overlay.open { opacity: 1; visibility: visible; }
+    #np-card {
+      background: var(--paper-raised); border-radius: 4px; max-width: 420px; width: 100%; position: relative;
+      padding: 44px 36px 36px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.35);
+      border: 1px solid var(--line);
+      transform: translateY(16px) scale(.97); transition: transform .3s ease;
+    }
+    #np-overlay.open #np-card { transform: translateY(0) scale(1); }
+    #np-close {
+      position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 999px;
+      display: flex; align-items: center; justify-content: center; color: var(--ink-soft); transition: background .15s, color .15s;
+    }
+    #np-close:hover { background: var(--line); color: var(--ink); }
+    @media (prefers-reduced-motion: reduce) {
+      #np-overlay, #np-card { transition: none !important; }
+    }
+
+    /* Hero plein écran */
+    #hero { position:relative; width:100%; height:80vh; min-height:460px; max-height:840px; overflow:hidden; background:#1A100D; }
+    #hero-slides { position:absolute; inset:0; }
+    .hero-slide { position:absolute; inset:0; background-size:cover; background-position:center; transition:opacity .8s ease; filter:saturate(.92) contrast(1.03); }
+    #hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(20,16,13,.88) 0%, rgba(20,16,13,.2) 55%, transparent 100%); }
+
+    /* Miniature hero */
+    .hero-thumb { width:88px; height:88px; border-radius:3px; overflow:hidden; background-size:cover; background-position:center; border:1px solid rgba(246,234,223,.35); cursor:pointer; transition:border-color .2s, transform .2s, opacity .2s; }
+    .hero-thumb.active { border-color:#FAF8F2; transform:scale(1.05); opacity:1; }
+    .hero-thumb:not(.active) { opacity:.45; }
+
+    /* Titre du hero : grossit au survol */
+    #hero-title { transform-origin: center; transition: transform .3s cubic-bezier(.22,1,.36,1); }
+    #hero-link:hover #hero-title, #hero-link:focus-visible #hero-title { transform: scale(1.04); }
+    @media (prefers-reduced-motion: reduce) { #hero-link:hover #hero-title { transform: none; } }
+
+    /* Dot */
+    .hero-dot { height:5px; border-radius:4px; background:rgba(246,234,223,.4); transition:width .3s, background .3s; }
+    .hero-dot.active { width:26px !important; background:#FAF8F2; }
+
+    /* Cards */
+    .article-card img { transition:transform .6s cubic-bezier(.22,1,.36,1); }
+    .article-card:hover img { transform:scale(1.04); }
+
+    /* Reveal */
+    .reveal { opacity:0; transform:translateY(16px); transition:opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1); }
+    .reveal.is-visible { opacity:1; transform:none; }
+
+    /* Skeleton */
+    .skeleton { background:linear-gradient(90deg,var(--paper-raised) 25%,var(--line) 50%,var(--paper-raised) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .article-card img, .hero-slide { transition:none !important; animation:none !important; opacity:1 !important; transform:none !important; }
+    }
+  </style>
+  <script src="/animations.js" defer></script>
+</head>
+
+<body class="font-sans antialiased">
+  <div id="ambient"></div>
+
+  <!-- POPUP NEWSLETTER -->
+  <div id="np-overlay" role="dialog" aria-modal="true" aria-labelledby="np-title">
+    <div id="np-card">
+      <button id="np-close" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <img src="/images/logo/logo-256.png" alt="Les Heures Flâneuses" width="72" height="72" style="height:72px;width:72px" class="mx-auto mb-4" />
+      <h2 id="np-title" class="font-display text-2xl font-medium tracking-tight leading-snug" style="color:var(--ink)">Les meilleures expériences,<br>directement dans ta boîte mail</h2>
+      <p class="text-sm mt-2" style="color:var(--ink-soft)">Un mail dès qu'un nouvel article est publié. Pas de spam, désinscription en un clic.</p>
+      <form id="np-form" class="flex flex-col gap-3 mt-5" onsubmit="handleNewsletterPopup(event)">
+        <label for="np-email-input" class="sr-only">Adresse e-mail</label>
+        <input id="np-email-input" type="email" placeholder="ton@email.com" required
+          class="w-full rounded-sm px-4 py-3 text-sm focus:outline-none transition"
+          style="background:var(--paper);border:1px solid var(--line);color:var(--ink)" />
+        <button type="submit" id="np-btn"
+          class="w-full px-6 py-3 rounded-sm font-semibold text-sm transition-colors"
+          style="background:var(--accent);color:#FFFDF9">S'abonner</button>
+      </form>
+      <p id="np-success" class="hidden text-sm font-medium mt-3" style="color:var(--pine)">✓ Inscription confirmée !</p>
+      <p id="np-error"   class="hidden text-sm mt-3" style="color:var(--accent)">Cette adresse est déjà inscrite ou une erreur est survenue.</p>
+      <p class="text-xs mt-4" style="color:var(--ink-soft)">En t'abonnant, tu acceptes notre <a href="confidentialite.html" class="underline">politique de confidentialité</a>.</p>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header id="site-header" class="nav-centered sticky top-0 z-50 backdrop-blur" style="background:color-mix(in srgb, var(--paper) 94%, transparent)">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 nc-top">
+      <span id="nav-clock" class="nav-clock nc-clock" title="Le site suit votre heure"><span class="nav-time">--:--</span><span class="nav-band"></span></span>
+      <a href="/" class="nc-logo" aria-label="Les Heures Flâneuses — Accueil">
+        <img src="/images/logo/logo-256.png" alt="" width="64" height="64" class="nc-logo-img" />
+        <span class="nc-wordmark font-display">Les Heures <em>Flâneuses</em></span>
+      </a>
+      <a href="#newsletter" class="nc-sub hidden md:inline-flex">S'abonner</a>
+      <button id="menu-btn" aria-label="Menu" class="nc-burger md:hidden" style="color:var(--ink)">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <nav aria-label="Navigation principale" class="nc-links hidden md:flex">
+      <a href="categorie.html?cat=lifestyle" class="ink-link nav-link" data-cat="lifestyle">Lifestyle</a>
+      <a href="categorie.html?cat=sport"  class="ink-link nav-link" data-cat="sport">Tech</a>
+    </nav>
+
+    <div class="nav-horizon" aria-hidden="true"><span class="nav-horizon-elapsed"></span><span class="nav-sun"></span></div>
+
+    <div id="nav-panel" class="nav-panel" aria-hidden="true"></div>
+
+    <div id="mobile-menu" class="hidden md:hidden px-4 py-2 text-sm font-medium" style="color:var(--ink-soft)">
+      <a href="categorie.html?cat=lifestyle" class="block">Lifestyle</a>
+      <a href="categorie.html?cat=sport"  class="block">Tech</a>
+      <a href="#newsletter" class="block">S'abonner</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO PLEIN ÉCRAN -->
+    <section id="hero" aria-label="Article à la une">
+
+      <!-- Slides -->
+      <div id="hero-slides">
+        <div class="hero-slide skeleton" style="opacity:1"></div>
+      </div>
+
+      <!-- Overlay -->
+      <div id="hero-overlay"></div>
+
+      <!-- Miniatures desktop (droite) -->
+      <div id="hero-thumbs" class="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2.5 z-20"></div>
+
+      <!-- Contenu texte -->
+      <div class="absolute inset-0 flex flex-col items-center justify-end pb-16 text-center text-white px-6 md:pr-28 z-10 pointer-events-none">
+        <a id="hero-link" href="#" class="pointer-events-auto flex flex-col items-center gap-1 group">
+          <span id="hero-cat" class="text-xs font-bold tracking-[0.2em] uppercase mb-3" style="color:var(--brass)"></span>
+          <h1 id="hero-title" class="font-display italic text-3xl sm:text-4xl md:text-6xl font-medium leading-[1.08] max-w-4xl drop-shadow"></h1>
+          <p id="hero-date" class="text-sm mt-4 text-white/50 font-medium"></p>
+        </a>
+      </div>
+
+      <!-- Dots (bas gauche) -->
+      <div id="hero-dots" class="absolute bottom-6 left-6 flex items-center gap-2 z-20"></div>
+
+    </section>
+
+    <!-- DERNIERS ARTICLES — grille déconstruite -->
+    <section aria-labelledby="articles-title" class="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-24">
+      <div class="flex items-end justify-between mb-10 md:mb-14 gap-4" style="border-bottom:1px solid var(--line); padding-bottom:1rem">
+        <h2 id="articles-title" class="font-display italic text-3xl md:text-4xl font-medium" style="color:var(--ink)">Derniers articles</h2>
+        <span class="hidden sm:block text-xs uppercase tracking-[0.2em] shrink-0" style="color:var(--ink-soft)">Lifestyle · Tech</span>
+      </div>
+
+      <div id="articles-grid">
+        <div class="skeleton h-96 mb-10"></div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div class="skeleton rounded-sm h-64"></div>
+          <div class="skeleton rounded-sm h-64"></div>
+          <div class="skeleton rounded-sm h-64"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer style="background:#1D1411; color:#C2AB9C">
+
+    <section id="newsletter" class="max-w-7xl mx-auto px-4 sm:px-6 py-24" style="border-bottom:1px solid rgba(246,234,223,.1)">
+      <div class="max-w-xl mx-auto text-center space-y-5">
+        <h2 class="font-display italic text-3xl md:text-4xl font-medium leading-snug" style="color:#F6EADF">Les meilleures expériences,<br>sans passer des heures à chercher</h2>
+        <p class="text-base">Reçois un mail dès qu'un nouvel article est publié. Pas de spam, désinscription en un clic.</p>
+        <form id="newsletter-form" class="flex flex-col sm:flex-row gap-3 mt-4" onsubmit="handleNewsletter(event)">
+          <label for="email-input" class="sr-only">Adresse e-mail</label>
+          <input id="email-input" type="email" placeholder="ton@email.com" required
+            class="flex-1 rounded-sm px-5 py-3 text-sm focus:outline-none transition"
+            style="background:#281C17; border:1px solid rgba(246,234,223,.15); color:#F6EADF" />
+          <button type="submit" id="newsletter-btn"
+            class="px-6 py-3 rounded-sm font-semibold text-sm transition-colors whitespace-nowrap"
+            style="background:var(--accent); color:#FFFDF9">S'abonner</button>
+        </form>
+        <p id="newsletter-success" class="hidden text-sm font-medium" style="color:#8FAE9E">✓ Inscription confirmée !</p>
+        <p id="newsletter-error"   class="hidden text-sm" style="color:#F0714A">Cette adresse est déjà inscrite ou une erreur est survenue.</p>
+        <p class="text-xs opacity-70">En t'abonnant, tu acceptes notre politique de confidentialité.</p>
+      </div>
+    </section>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-14 footer-trio" style="border-bottom:1px solid rgba(246,234,223,.1)">
+      <p class="text-sm leading-relaxed max-w-xs">Un blog indépendant, écrit par Marius Masoch. Des tests et des avis sur le lifestyle et la tech, après usage réel.</p>
+      <a href="/" class="ft-brand font-display flex flex-col items-center gap-3 leading-none text-center" style="color:#F6EADF" aria-label="Les Heures Flâneuses, accueil">
+        <img src="/images/logo/logo-256.png" alt="" width="104" height="104" style="height:104px;width:104px" />
+        <span class="flex flex-col items-center leading-none">
+          <span class="text-xl md:text-2xl">Les Heures</span>
+          <span class="text-5xl md:text-6xl italic mt-1" style="color:#F58B2B">Flâneuses</span>
+        </span>
+      </a>
+      <nav aria-label="Pied de page">
+        <ul class="font-display text-xl md:text-2xl flex flex-wrap md:justify-end gap-x-6 gap-y-2" style="color:#F6EADF">
+          <li><a href="categorie.html?cat=lifestyle" class="ink-link">Lifestyle</a></li>
+          <li><a href="categorie.html?cat=sport" class="ink-link">Tech</a></li>
+        </ul>
+        <ul class="mt-6 text-sm flex flex-wrap md:justify-end gap-x-5 gap-y-2">
+          <li><a href="ecrire.html" class="ink-link">Écrire pour nous</a></li>
+          <li><a href="contact.html" class="ink-link">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 text-xs opacity-60">© 2026 Les Heures Flâneuses</div>
+
+  </footer>
+
+  <script>
+  const SUPABASE_URL  = 'https://yrgylnmhqcimwgmjponj.supabase.co';
+  const SUPABASE_ANON = 'sb_publishable__SdwJpIWNVfPfVNX7eFc-w_mQA8av6H';
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  // ---- ARTICLES — grille déconstruite ----
+  function catTag(a) {
+    const t = window.cardTag(a);
+    return `<span class="px-2.5 py-1 text-xs font-semibold tracking-wide" style="color:${t.text};background:${t.bg}">${t.label}</span>`;
+  }
+
+  function placeholderImg(h) {
+    return `<div class="${h} flex items-center justify-center" style="background:var(--paper-raised)"><svg class="w-8 h-8" style="color:var(--line)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>`;
+  }
+
+  // Article en tête — bande éditoriale, texte qui chevauche l'image
+  function buildFeatured(a) {
+    const date = formatDate(a.date_creation);
+    const mins = a.temps_lecture ? `${a.temps_lecture} min` : '';
+    const url  = `article.html?slug=${a.slug || a.id}`;
+    const img  = a.image_url
+      ? `<img src="${a.image_url}" alt="${a.titre}" class="w-full h-full object-cover" loading="lazy" />`
+      : placeholderImg('h-full');
+
+    return `<article class="article-card reveal grid md:grid-cols-12 gap-0 items-center mb-16 md:mb-24">
+      <div class="md:col-span-8 md:col-start-1 md:row-start-1 h-72 md:h-[28rem] overflow-hidden" style="border:1px solid var(--line)">${img}</div>
+      <div class="md:col-span-5 md:col-start-8 md:row-start-1 md:-ml-20 p-6 md:p-8 relative z-10" style="background:var(--paper-raised); border:1px solid var(--line); box-shadow:0 18px 40px rgba(43,27,21,.12)">
+        <div class="flex items-center gap-3 mb-4">
+          ${catTag(a)}
+          <span class="text-xs" style="color:var(--ink-soft)">${[date, mins].filter(Boolean).join(' · ')}</span>
+        </div>
+        <h3 class="font-display italic text-2xl md:text-3xl font-medium leading-snug mb-4" style="color:var(--ink)">
+          <a href="${url}" class="title-link">${a.titre}</a>
+        </h3>
+        <p class="text-sm leading-relaxed mb-5" style="color:var(--ink-soft)">${a.extrait || ''}</p>
+        <a href="${url}" class="ink-link text-sm font-semibold" style="color:var(--accent)">Lire l'article →</a>
+      </div>
+    </article>`;
+  }
+
+  // Articles suivants — décalage vertical alterné pour casser la grille
+  function buildCard(a, idx) {
+    const date = formatDate(a.date_creation);
+    const mins = a.temps_lecture ? `${a.temps_lecture} min` : '';
+    const url  = `article.html?slug=${a.slug || a.id}`;
+    const img  = a.image_url
+      ? `<img src="${a.image_url}" alt="${a.titre}" class="w-full h-56 object-cover" loading="lazy" />`
+      : placeholderImg('h-56');
+    const offset = idx % 2 === 1 ? 'sm:mt-12' : '';
+
+    return `<article class="article-card reveal ${offset}">
+      <div class="overflow-hidden mb-4" style="border:1px solid var(--line)">${img}</div>
+      <div class="flex items-center gap-3 mb-3">${catTag(a)}<span class="text-xs" style="color:var(--ink-soft)">${[date, mins].filter(Boolean).join(' · ')}</span></div>
+      <h3 class="font-display text-lg font-medium leading-snug mb-2" style="color:var(--ink)">
+        <a href="${url}" class="title-link">${a.titre}</a>
+      </h3>
+      <p class="text-sm leading-relaxed" style="color:var(--ink-soft)">${a.extrait || ''}</p>
+    </article>`;
+  }
+
+  async function loadArticles() {
+    const grid = document.getElementById('articles-grid');
+    const { data, error } = await db
+      .from('articles')
+      .select('id, titre, extrait, categorie, sous_categorie, image_url, slug, temps_lecture, date_creation')
+      .eq('statut', 'publié')
+      .order('date_creation', { ascending: false });
+
+    if (error || !data) {
+      grid.innerHTML = `<p class="text-center py-12" style="color:var(--ink-soft)">Impossible de charger les articles.</p>`;
+      return;
+    }
+    if (!data.length) {
+      grid.innerHTML = `<p class="text-center py-12" style="color:var(--ink-soft)">Aucun article publié pour l'instant.</p>`;
+      return;
+    }
+    const [first, ...rest] = data;
+    const featuredHTML = buildFeatured(first);
+    const restHTML = rest.length
+      ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">${rest.map(buildCard).join('')}</div>`
+      : '';
+    grid.innerHTML = featuredHTML + restHTML;
+    window.revealAll && window.revealAll();
+  }
+
+  // ---- CARROUSEL HERO ----
+  let _slides = [], _idx = 0, _timer = null;
+
+  function buildCarousel(articles) {
+    if (!articles || !articles.length) return;
+    _slides = articles;
+
+    document.getElementById('hero-slides').innerHTML = articles.map((a, i) =>
+      `<div class="hero-slide" style="background-image:url('${a.image_url || ''}');opacity:${i===0?1:0}"></div>`
+    ).join('');
+
+    document.getElementById('hero-dots').innerHTML = articles.map((_, i) =>
+      `<button onclick="slideTo(${i})" aria-label="Slide ${i+1}" class="hero-dot ${i===0?'active':'w-2'}" style="width:${i===0?'28px':'8px'}"></button>`
+    ).join('');
+
+    document.getElementById('hero-thumbs').innerHTML = articles.map((a, i) =>
+      `<button onclick="slideTo(${i})" aria-label="${a.titre}" class="hero-thumb ${i===0?'active':''}"
+        style="background-image:url('${a.image_url || ''}')"></button>`
+    ).join('');
+
+    updateCarousel(0);
+    startTimer();
+  }
+
+  function updateCarousel(idx) {
+    const a   = _slides[idx];
+    const cat = window.cardTag(a).label;
+    const url = a.slug ? `article.html?slug=${a.slug}` : `article.html?id=${a.id}`;
+
+    document.getElementById('hero-cat').textContent   = cat;
+    document.getElementById('hero-title').textContent = a.titre;
+    document.getElementById('hero-date').textContent  = formatDate(a.date_creation);
+    document.getElementById('hero-link').href = url;
+
+    document.querySelectorAll('.hero-slide').forEach((el, i) => el.style.opacity = i===idx?'1':'0');
+    document.querySelectorAll('.hero-dot').forEach((el, i) => {
+      el.className = `hero-dot ${i===idx?'active':''}`;
+      el.style.width = i===idx ? '28px' : '8px';
+    });
+    document.querySelectorAll('.hero-thumb').forEach((el, i) => {
+      el.className = `hero-thumb ${i===idx?'active':''}`;
+    });
+  }
+
+  function slideTo(idx) { _idx = idx; updateCarousel(idx); clearInterval(_timer); startTimer(); }
+  function startTimer() { _timer = setInterval(() => { _idx = (_idx+1)%_slides.length; updateCarousel(_idx); }, 5000); }
+
+  async function loadCarousel() {
+    const { data: starred } = await db.from('articles')
+      .select('id, titre, categorie, sous_categorie, image_url, slug, date_creation')
+      .eq('statut', 'publié').eq('is_carousel', true)
+      .order('date_creation', { ascending: false }).limit(5);
+    if (starred && starred.length) { buildCarousel(starred); return; }
+
+    const { data: latest } = await db.from('articles')
+      .select('id, titre, categorie, sous_categorie, image_url, slug, date_creation')
+      .eq('statut', 'publié')
+      .order('date_creation', { ascending: false }).limit(5);
+    if (latest && latest.length) buildCarousel(latest);
+  }
+
+  loadCarousel();
+  loadArticles();
+
+  // ---- NEWSLETTER ----
+  async function handleNewsletter(e) {
+    e.preventDefault();
+    const email = document.getElementById('email-input').value.trim();
+    const btn   = document.getElementById('newsletter-btn');
+    document.getElementById('newsletter-success').classList.add('hidden');
+    document.getElementById('newsletter-error').classList.add('hidden');
+    btn.disabled = true; btn.textContent = '…';
+
+    const { error } = await db.from('abonnes').insert([{ email }]);
+    if (error) {
+      document.getElementById('newsletter-error').classList.remove('hidden');
+    } else {
+      document.getElementById('newsletter-form').classList.add('hidden');
+      document.getElementById('newsletter-success').classList.remove('hidden');
+    }
+    btn.disabled = false; btn.textContent = "S'abonner";
+  }
+
+  // ---- POPUP NEWSLETTER ----
+  async function handleNewsletterPopup(e) {
+    e.preventDefault();
+    const email = document.getElementById('np-email-input').value.trim();
+    const btn   = document.getElementById('np-btn');
+    document.getElementById('np-success').classList.add('hidden');
+    document.getElementById('np-error').classList.add('hidden');
+    btn.disabled = true; btn.textContent = '…';
+
+    const { error } = await db.from('abonnes').insert([{ email }]);
+    if (error) {
+      document.getElementById('np-error').classList.remove('hidden');
+      btn.disabled = false; btn.textContent = "S'abonner";
+    } else {
+      document.getElementById('np-form').classList.add('hidden');
+      document.getElementById('np-success').classList.remove('hidden');
+      localStorage.setItem('lhf_newsletter_subscribed', '1');
+      setTimeout(closeNewsletterPopup, 1800);
+    }
+  }
+
+  function closeNewsletterPopup() {
+    document.getElementById('np-overlay').classList.remove('open');
+    localStorage.setItem('lhf_newsletter_popup_seen', Date.now().toString());
+  }
+
+  (function initNewsletterPopup() {
+    const subscribed = localStorage.getItem('lhf_newsletter_subscribed');
+    const lastSeen   = parseInt(localStorage.getItem('lhf_newsletter_popup_seen') || '0', 10);
+    const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+    if (subscribed || (Date.now() - lastSeen) < fourteenDays) return;
+
+    const overlay = document.getElementById('np-overlay');
+    setTimeout(() => overlay.classList.add('open'), 1500);
+
+    document.getElementById('np-close').addEventListener('click', closeNewsletterPopup);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeNewsletterPopup(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeNewsletterPopup(); });
+  })();
+  </script>
+
+  <script>
+    document.getElementById('menu-btn').addEventListener('click', () =>
+      document.getElementById('mobile-menu').classList.toggle('hidden'));
+  </script>
+</body>
+</html>

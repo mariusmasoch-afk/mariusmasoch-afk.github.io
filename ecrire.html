@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Écrivez pour Les Heures Flâneuses — Partagez votre expérience produit avec notre communauté."/>
+  <title>Écrire pour nous — Les Heures Flâneuses</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif']},colors:{brand:{50:'#FDF3EE',100:'#FBDDD2',400:'#F58B2B',500:'#D13C1B',600:'#A82E12',700:'#A82E12'}}}}};</script>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261013" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20261013" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20261013" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    .nav-group { position: relative; }
+    .nav-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%) translateY(-4px);
+      min-width: 200px; background: #fff; border: 1px solid #f3f4f6;
+      border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.10);
+      padding: 6px; opacity: 0; visibility: hidden;
+      transition: opacity .18s ease, transform .18s ease, visibility .18s;
+      z-index: 100;
+    }
+    .nav-group:hover .nav-dropdown { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+    .nav-dropdown a {
+      display: flex; align-items: center; gap: 9px; padding: 8px 12px;
+      border-radius: 8px; color: #374151; font-size: .875rem; font-weight: 500;
+      text-decoration: none; transition: background .15s, color .15s;
+    }
+    .nav-dropdown a:hover { background: #f9fafb; color: #111827; }
+    .nav-chevron { transition: transform .2s ease; }
+    .nav-group:hover .nav-chevron { transform: rotate(180deg); }
+    .nav-link::after { content:''; display:block; height:2px; width:0; background:#D13C1B; transition:width .25s ease; }
+    .nav-link:hover::after { width:100%; }
+  </style>
+  <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);}</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-39RE8T7LE5"></script>
+  <script>gtag('js', new Date()); gtag('config', 'G-39RE8T7LE5');</script>
+</head>
+<body class="bg-white text-gray-900 font-sans antialiased">
+
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
+      <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Les Heures Flâneuses — Accueil">
+        <img src="/images/logo/logo-256.png" alt="Les Heures Flâneuses" width="56" height="56" style="height:56px;width:56px" />
+        <span class="font-sans font-bold tracking-tight text-gray-900 flex flex-col" style="gap:0"><span class="text-base leading-none">Les Heures</span><span class="text-xl leading-none text-brand-500">Flâneuses</span></span>
+      </a>
+      <nav aria-label="Navigation principale" class="hidden md:flex items-center gap-1 text-sm font-medium text-gray-600">
+        <a href="categorie.html?cat=lifestyle" class="px-3 py-2 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors font-medium">Lifestyle</a>
+        <a href="categorie.html?cat=sport" class="px-3 py-2 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors font-medium">Tech</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="/#newsletter" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors">S'abonner</a>
+        <button id="menu-btn" aria-label="Menu" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 px-4 py-4 text-sm font-medium text-gray-700">
+      <a href="categorie.html?cat=lifestyle" class="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50">✨ Lifestyle</a>
+      <a href="categorie.html?cat=sport" class="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50">💻 Tech</a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+
+    <div class="text-center mb-14">
+      <span class="inline-block px-3 py-1 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold uppercase tracking-wide mb-4">Contribuer</span>
+      <h1 class="text-4xl font-bold tracking-tight text-gray-900 mb-4">Écrire pour Les Heures Flâneuses</h1>
+      <p class="text-lg text-gray-500 leading-relaxed">Vous avez une passion pour le lifestyle ou la tech ? Partagez votre regard sincère avec notre communauté.</p>
+    </div>
+
+    <!-- Ce qu'on cherche -->
+    <section class="mb-12">
+      <h2 class="text-xl font-bold text-gray-900 mb-6">Ce qu'on recherche</h2>
+      <div class="space-y-4">
+        <div class="flex gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-100">
+          <span class="text-2xl shrink-0">✍️</span>
+          <div>
+            <h3 class="font-semibold text-gray-900">Un vécu authentique</h3>
+            <p class="text-sm text-gray-500 mt-1">Vous avez porté la pièce, séjourné dans l'hôtel, testé le produit. Vous pouvez en parler avec sincérité et profondeur.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-100">
+          <span class="text-2xl shrink-0">🎯</span>
+          <div>
+            <h3 class="font-semibold text-gray-900">Des sujets qui correspondent à nos rubriques</h3>
+            <p class="text-sm text-gray-500 mt-1">Lifestyle, tech...</p>
+          </div>
+        </div>
+        <div class="flex gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-100">
+          <span class="text-2xl shrink-0">🤝</span>
+          <div>
+            <h3 class="font-semibold text-gray-900">Un ton accessible et honnête</h3>
+            <p class="text-sm text-gray-500 mt-1">Pas besoin d'être journaliste. On cherche des gens qui partagent leur passion avec sincérité.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ce qu'on offre -->
+    <section class="mb-12">
+      <h2 class="text-xl font-bold text-gray-900 mb-6">Ce qu'on vous offre</h2>
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div class="text-center p-5 rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div class="text-3xl mb-2">📣</div>
+          <h3 class="font-semibold text-sm text-gray-900">Visibilité</h3>
+          <p class="text-xs text-gray-500 mt-1">Votre article promu sur nos réseaux sociaux et newsletter</p>
+        </div>
+        <div class="text-center p-5 rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div class="text-3xl mb-2">✏️</div>
+          <h3 class="font-semibold text-sm text-gray-900">Relecture pro</h3>
+          <p class="text-xs text-gray-500 mt-1">Notre équipe éditoriale améliore et optimise votre texte</p>
+        </div>
+        <div class="text-center p-5 rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div class="text-3xl mb-2">🔗</div>
+          <h3 class="font-semibold text-sm text-gray-900">Byline & backlink</h3>
+          <p class="text-xs text-gray-500 mt-1">Votre nom, votre bio et un lien vers votre profil ou site</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Formulaire de contact -->
+    <section class="bg-gray-950 rounded-2xl p-8 text-white">
+      <h2 class="text-xl font-bold mb-2">Proposer un article</h2>
+      <p class="text-gray-400 text-sm mb-6">Remplissez ce formulaire et on vous répond sous 48h.</p>
+      <form class="space-y-4" onsubmit="handleSubmit(event)">
+        <input type="hidden" name="access_key" value="932bdedb-2767-452b-9d77-8d55b70acbbe" />
+        <input type="hidden" name="subject" value="Proposition d'article — Les Heures Flâneuses" />
+        <input type="hidden" name="from_name" value="Les Heures Flâneuses — Écrire" />
+        <input type="checkbox" name="botcheck" class="hidden" />
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Prénom &amp; Nom</label>
+            <input type="text" name="name" required placeholder="Sophie Marchand" class="w-full text-sm bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500"/>
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Email</label>
+            <input type="email" name="email" required placeholder="vous@email.com" class="w-full text-sm bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Sujet de l'article</label>
+          <input type="text" name="sujet" required placeholder="Ex: Mon séjour au Brach Paris, ma pièce mode coup de cœur…" class="w-full text-sm bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500"/>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Rubrique</label>
+          <select name="rubrique" class="w-full text-sm bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <option value="">Choisir…</option>
+            <option value="lifestyle">Lifestyle</option>
+            <option value="tech">Tech</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Quelques mots sur vous et votre idée</label>
+          <textarea name="message" rows="4" placeholder="Parlez-nous de vous et de votre expérience. Quel angle voulez-vous traiter ?" class="w-full text-sm bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none leading-relaxed"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition-colors">Envoyer ma proposition</button>
+        <p id="form-msg" class="text-center text-sm text-emerald-400 hidden">✓ Proposition envoyée ! On vous répond sous 48h.</p>
+      </form>
+    </section>
+
+  </main>
+
+  <footer class="bg-gray-950 text-gray-400 mt-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-800 text-sm">
+      <span class="font-bold text-white">Les Heures <span class="text-brand-400">Flâneuses</span></span>
+      <nav class="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-500">
+        <a href="categorie.html?cat=lifestyle"   class="hover:text-white transition-colors">Lifestyle</a>
+        <a href="categorie.html?cat=sport"  class="hover:text-white transition-colors">Tech</a>
+        <a href="contact.html"              class="hover:text-white transition-colors">Contact</a>
+      </nav>
+      <span class="text-xs text-gray-600">© 2026 Les Heures Flâneuses</span>
+    </div>
+  </footer>
+
+  <script>
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.textContent = 'Envoi…';
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: new FormData(e.target)
+      });
+      if (res.ok) {
+        document.getElementById('form-msg').classList.remove('hidden');
+        e.target.reset();
+      } else {
+        alert('Une erreur est survenue. Réessayez ou écrivez-nous à contact@lesheuresflaneuses.fr');
+      }
+      btn.disabled = false; btn.textContent = 'Envoyer ma proposition';
+    }
+  </script>
+  <script>document.getElementById('menu-btn')?.addEventListener('click',()=>document.getElementById('mobile-menu').classList.toggle('hidden'));</script>
+</body>
+</html>

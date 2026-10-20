@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261013" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20261013" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Les Heures Flâneuses — Administration</title>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/subcats.js?v=20261010"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50:  '#FDF3EE',
+              100: '#FBDDD2',
+              400: '#F58B2B',
+              500: '#D13C1B',
+              600: '#A82E12',
+              700: '#A82E12',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Editor toolbar buttons */
+    .toolbar-btn {
+      @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors text-sm font-medium;
+    }
+    /* Sidebar nav link */
+    .nav-item {
+      @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer;
+    }
+    .nav-item.active {
+      @apply bg-brand-50 text-brand-700;
+    }
+    /* Template card */
+    .template-card {
+      @apply flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-brand-400 transition-colors text-center;
+    }
+    .template-card.selected {
+      @apply border-brand-500 bg-brand-50;
+    }
+    /* Tag pill */
+    .tag-pill {
+      @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium;
+    }
+    /* Drop zone */
+    #drop-zone.drag-over {
+      @apply border-brand-500 bg-brand-50;
+    }
+    /* Word count fade */
+    #word-count { transition: opacity .3s; }
+    /* Editable area */
+    #editor-body:empty::before {
+      content: attr(data-placeholder);
+      color: #9ca3af;
+      pointer-events: none;
+    }
+    #editor-body:focus { outline: none; }
+    #title-input:focus { outline: none; }
+    /* Puces/numéros (le plugin Tailwind Typography n'est pas chargé, il faut les restaurer manuellement) */
+    #editor-body ul { list-style: disc; padding-left: 1.5rem; margin: 1rem 0; }
+    #editor-body ol { list-style: decimal; padding-left: 1.5rem; margin: 1rem 0; }
+    #editor-body li { margin: .25rem 0; }
+  </style>
+</head>
+
+<body class="h-full bg-gray-50 font-sans antialiased">
+
+  <!-- ====== GATE D'AUTHENTIFICATION (vraie auth Supabase) ====== -->
+  <div id="auth-gate" style="position:fixed;inset:0;z-index:99999;background:#f9fafb;display:flex;align-items:center;justify-content:center;">
+    <div style="width:100%;max-width:380px;padding:2rem;background:#fff;border-radius:1.25rem;box-shadow:0 4px 32px rgba(0,0,0,0.08);border:1px solid #f3f4f6;margin:1rem;">
+      <p style="font-size:1.25rem;font-weight:700;color:#111827;margin:0 0 4px;">Les Heures <span style="color:#D13C1B;">Flâneuses</span></p>
+      <p style="font-size:.8rem;color:#9ca3af;margin:0 0 1.5rem;">Administration — accès restreint</p>
+      <div id="auth-error" style="display:none;background:#fef2f2;color:#ef4444;font-size:.8rem;padding:.6rem .9rem;border-radius:.6rem;margin-bottom:1rem;">Email ou mot de passe incorrect.</div>
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="username"
+        style="width:100%;padding:.75rem 1rem;border:1.5px solid #e5e7eb;border-radius:.75rem;font-size:.9rem;outline:none;box-sizing:border-box;margin-bottom:.75rem;" />
+      <input id="auth-input" type="password" placeholder="Mot de passe" autocomplete="current-password"
+        style="width:100%;padding:.75rem 1rem;border:1.5px solid #e5e7eb;border-radius:.75rem;font-size:.9rem;outline:none;box-sizing:border-box;margin-bottom:.75rem;"
+        onkeydown="if(event.key==='Enter')checkAuth()" />
+      <button id="auth-btn" onclick="checkAuth()"
+        style="width:100%;padding:.75rem;background:#111827;color:#fff;font-weight:600;font-size:.9rem;border:none;border-radius:.75rem;cursor:pointer;">
+        Connexion
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL  = 'https://yrgylnmhqcimwgmjponj.supabase.co';
+    const SUPABASE_ANON = 'sb_publishable__SdwJpIWNVfPfVNX7eFc-w_mQA8av6H';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    async function checkAuth() {
+      const email = document.getElementById('auth-email').value.trim();
+      const pwd   = document.getElementById('auth-input').value;
+      const btn   = document.getElementById('auth-btn');
+      btn.disabled = true; btn.textContent = 'Connexion…';
+
+      const { error } = await db.auth.signInWithPassword({ email, password: pwd });
+
+      if (!error) {
+        document.getElementById('auth-gate').remove();
+      } else {
+        document.getElementById('auth-error').style.display = 'block';
+        document.getElementById('auth-input').value = '';
+        document.getElementById('auth-input').focus();
+        btn.disabled = false; btn.textContent = 'Connexion';
+      }
+    }
+
+    async function logout() {
+      await db.auth.signOut();
+      window.location.reload();
+    }
+
+    // Vérifier si une session valide existe déjà
+    (async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) document.getElementById('auth-gate').remove();
+    })();
+  </script>
+  <!-- ====== FIN GATE ====== -->
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ============================================================
+    SIDEBAR
+  =============================================================== -->
+  <aside class="w-56 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full">
+
+    <!-- Logo -->
+    <div class="h-16 flex items-center px-5 border-b border-gray-100 shrink-0">
+      <a href="/" class="font-sans font-bold text-lg tracking-tight text-gray-900">
+        Les Heures <span class="text-brand-500">Flâneuses</span>
+      </a>
+      <span class="ml-2 text-xs font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Admin</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+
+      <p class="px-3 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Général</p>
+
+      <div class="nav-item active" onclick="showView('dashboard')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"/>
+        </svg>
+        Tableau de bord
+      </div>
+
+      <p class="px-3 pt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Contenu</p>
+
+      <div class="nav-item" onclick="showView('articles')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Tous les articles
+      </div>
+
+      <div class="nav-item" onclick="showView('editor')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nouvel article
+      </div>
+
+      <div class="nav-item" onclick="showView('medias')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Médias
+      </div>
+
+      <p class="px-3 pt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Système</p>
+
+      <div class="nav-item" onclick="showView('redacteurs')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Rédacteurs
+      </div>
+
+      <div class="nav-item" onclick="showView('settings')">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Paramètres
+      </div>
+    </nav>
+
+    <div class="px-3 py-4 border-t border-gray-100 shrink-0">
+      <div class="nav-item" onclick="logout()">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Se déconnecter
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ============================================================
+    MAIN CONTENT
+  =============================================================== -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Top bar -->
+    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shrink-0">
+      <div class="flex items-center gap-3">
+        <span id="breadcrumb-section" class="text-sm text-gray-400">Général</span>
+        <svg class="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span id="breadcrumb-page" class="text-sm font-medium text-gray-700">Tableau de bord</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-gray-400">
+        <span id="save-status" class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+          Non sauvegardé
+        </span>
+      </div>
+    </header>
+
+    <!-- ===================== VUE : TABLEAU DE BORD ===================== -->
+    <div id="view-dashboard" class="flex-1 overflow-y-auto bg-gray-50 p-8 hidden">
+      <h2 class="text-xl font-bold text-gray-900 mb-6">Tableau de bord</h2>
+
+      <!-- Stat cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Articles publiés</p>
+            <p id="stat-published" class="text-2xl font-bold text-gray-900 mt-0.5">—</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Brouillons</p>
+            <p id="stat-drafts" class="text-2xl font-bold text-gray-900 mt-0.5">—</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Catégories actives</p>
+            <p id="stat-cats" class="text-2xl font-bold text-gray-900 mt-0.5">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Articles récents -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 class="font-semibold text-gray-800">Articles récents</h3>
+          <button onclick="showView('editor')" class="text-xs font-medium text-brand-600 hover:text-brand-700">+ Nouvel article</button>
+        </div>
+        <div id="dashboard-articles" class="divide-y divide-gray-50">
+          <p class="px-6 py-8 text-sm text-gray-400 text-center">Chargement…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== VUE : TOUS LES ARTICLES ===================== -->
+    <div id="view-articles" class="flex-1 overflow-y-auto bg-gray-50 p-8 hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-900">Tous les articles</h2>
+        <button onclick="showView('editor')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors">
+          + Nouvel article
+        </button>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <th class="px-4 py-3 text-center" title="Hero">★</th>
+              <th class="text-left px-4 py-3">Titre</th>
+              <th class="text-left px-4 py-3 hidden sm:table-cell">Catégorie</th>
+              <th class="text-left px-4 py-3 hidden md:table-cell">Date</th>
+              <th class="text-left px-4 py-3">Statut</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="articles-table-body">
+            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== VUE : ÉDITEUR ===================== -->
+    <div id="view-editor" class="flex-1 flex overflow-hidden hidden">
+
+      <!-- ---- EDITOR ---- -->
+      <main class="flex-1 overflow-y-auto bg-white">
+        <div class="max-w-3xl mx-auto px-8 py-10">
+
+          <!-- Toolbar WYSIWYG -->
+          <div id="editor-toolbar" class="sticky top-0 z-30 bg-white flex flex-wrap items-center gap-0.5 mb-6 pb-4 border-b border-gray-100">
+
+            <!-- Historique -->
+            <button class="toolbar-btn" title="Annuler" onclick="document.execCommand('undo')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+            </button>
+            <button class="toolbar-btn" title="Rétablir" onclick="document.execCommand('redo')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/></svg>
+            </button>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Titres -->
+            <select onchange="applyFormat(this)" class="text-xs text-gray-600 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400 bg-white">
+              <option value="p">Paragraphe</option>
+              <option value="h2">Titre H2</option>
+              <option value="h3">Titre H3</option>
+              <option value="h4">Titre H4</option>
+              <option value="blockquote">Citation</option>
+            </select>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Style texte -->
+            <button class="toolbar-btn font-bold" title="Gras" onclick="document.execCommand('bold')">B</button>
+            <button class="toolbar-btn italic" title="Italique" onclick="document.execCommand('italic')">I</button>
+            <button class="toolbar-btn underline" title="Souligné" onclick="document.execCommand('underline')">U</button>
+            <button class="toolbar-btn line-through text-gray-400" title="Barré" onclick="document.execCommand('strikeThrough')">S</button>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Couleur texte -->
+            <div class="relative group" title="Couleur du texte">
+              <button class="toolbar-btn flex items-center gap-1" onclick="document.getElementById('text-color-input').click()">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10M12 3l5 9H7l5-9z"/></svg>
+                <span id="color-swatch" class="w-3 h-1.5 rounded-sm bg-gray-900 block"></span>
+              </button>
+              <input id="text-color-input" type="color" value="#111827" class="absolute opacity-0 w-0 h-0" onchange="applyColor(this.value)" />
+            </div>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Alignement -->
+            <button class="toolbar-btn" title="Aligner à gauche" onclick="document.execCommand('justifyLeft')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h12M3 18h15"/></svg>
+            </button>
+            <button class="toolbar-btn" title="Centrer" onclick="document.execCommand('justifyCenter')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M6 12h12M4 18h16"/></svg>
+            </button>
+            <button class="toolbar-btn" title="Aligner à droite" onclick="document.execCommand('justifyRight')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M9 12h12M6 18h15"/></svg>
+            </button>
+            <button class="toolbar-btn" title="Justifier" onclick="document.execCommand('justifyFull')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h18M3 18h18"/></svg>
+            </button>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Indentation -->
+            <button class="toolbar-btn" title="Diminuer le retrait" onclick="document.execCommand('outdent')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l-6 6 6 6M21 12H3"/></svg>
+            </button>
+            <button class="toolbar-btn" title="Augmenter le retrait" onclick="document.execCommand('indent')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 6l6 6-6 6M3 12h18"/></svg>
+            </button>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Listes -->
+            <button class="toolbar-btn" title="Liste à puces" onclick="toggleBulletList()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/><circle cx="2" cy="6" r="1" fill="currentColor"/><circle cx="2" cy="12" r="1" fill="currentColor"/><circle cx="2" cy="18" r="1" fill="currentColor"/></svg>
+            </button>
+            <button class="toolbar-btn" title="Liste numérotée" onclick="document.execCommand('insertOrderedList')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            </button>
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Lien -->
+            <button class="toolbar-btn" title="Insérer un lien" onclick="insertLink()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            </button>
+
+            <!-- Image inline -->
+            <button class="toolbar-btn" title="Insérer une image" onclick="prepareImageInsert()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </button>
+            <input id="inline-img-input" type="file" accept="image/*" class="hidden" onchange="insertInlineImage(this)" />
+
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+
+            <!-- Note produit -->
+            <button class="toolbar-btn text-brand-500" title="Insérer un bloc notation produit" onclick="insertRatingBlock()">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </button>
+
+            <!-- Verdict rapide -->
+            <button class="toolbar-btn text-emerald-500" title="Insérer un bloc Verdict rapide" onclick="insertVerdictBlock()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            </button>
+
+            <!-- FAQ -->
+            <button class="toolbar-btn text-violet-500" title="Insérer un bloc FAQ" onclick="insertFaqBlock()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </button>
+
+            <!-- Encadré info -->
+            <button class="toolbar-btn text-brand-500" title="Insérer un encadré info" onclick="insertCallout('info')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/></svg>
+            </button>
+
+            <!-- Encadré warning -->
+            <button class="toolbar-btn text-brand-500" title="Insérer un encadré attention" onclick="insertCallout('warning')">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            </button>
+
+            <!-- Séparateur -->
+            <button class="toolbar-btn" title="Insérer un séparateur" onclick="insertHR()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+            </button>
+
+            <!-- Compteur -->
+            <div class="ml-auto text-xs text-gray-400" id="word-count">0 mot</div>
+          </div>
+
+          <!-- Titre -->
+          <div
+            id="title-input"
+            contenteditable="true"
+            data-placeholder="Titre de l'article…"
+            class="text-3xl font-bold text-gray-900 leading-tight mb-6 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-300 focus:outline-none"
+            style="min-height:2.5rem"
+            oninput="updateSaveStatus()"
+            onblur="autoSuggestTags()"
+          ></div>
+
+          <!-- Extrait -->
+          <div
+            id="excerpt-input"
+            contenteditable="true"
+            data-placeholder="Ajoutez un court extrait visible dans la grille d'articles…"
+            class="text-base text-gray-400 italic mb-8 pb-8 border-b border-dashed border-gray-200 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-300 focus:outline-none leading-relaxed"
+            style="min-height:1.5rem"
+            oninput="updateSaveStatus(); autoFillMetaDesc()"
+          ></div>
+
+          <!-- Corps de l'article -->
+          <div
+            id="editor-body"
+            contenteditable="true"
+            data-placeholder="Commencez à rédiger votre article ici…&#10;&#10;Conseil : utilisez la barre d'outils pour structurer votre contenu avec des titres, des listes ou des blocs de notation produit."
+            class="prose prose-gray max-w-none text-base text-gray-700 leading-relaxed focus:outline-none"
+            style="min-height: 400px; white-space: pre-wrap;"
+            oninput="updateWordCount(); updateSaveStatus()"
+            ondragover="event.preventDefault()"
+            ondrop="handleEditorDrop(event)"
+            onpaste="handleEditorPaste(event)"
+          ></div>
+
+        </div>
+      </main>
+
+      <!-- ---- RIGHT PANEL ---- -->
+      <aside class="w-72 shrink-0 bg-gray-50 border-l border-gray-100 overflow-y-auto flex flex-col">
+        <div class="p-5 space-y-6">
+
+          <!-- Boutons d'action -->
+          <div class="space-y-2 pt-1">
+            <button onclick="publishArticle()"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white font-semibold text-sm hover:bg-gray-700 transition-colors shadow-sm">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+              </svg>
+              Publier
+            </button>
+            <button onclick="saveDraft()"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-medium text-sm hover:bg-gray-50 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+              </svg>
+              Enregistrer le brouillon
+            </button>
+            <!-- Option newsletter -->
+            <label class="flex items-center gap-2 px-1 pt-1 cursor-pointer select-none">
+              <input type="checkbox" id="send-newsletter-check" checked class="w-3.5 h-3.5 rounded accent-gray-900" />
+              <span class="text-xs text-gray-400">Notifier les abonnés à la publication</span>
+            </label>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Template de disposition -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Disposition</h3>
+            <div class="grid grid-cols-3 gap-2">
+
+              <div class="template-card selected" onclick="selectTemplate(this, 'classic')" title="Article classique">
+                <svg class="w-6 h-6 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+                </svg>
+                <span class="text-xs text-gray-600 leading-tight">Classique</span>
+              </div>
+
+              <div class="template-card" onclick="selectTemplate(this, 'product')" title="Test produit avec notation">
+                <svg class="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+                <span class="text-xs text-gray-600 leading-tight">Test produit</span>
+              </div>
+
+              <div class="template-card" onclick="selectTemplate(this, 'hotel')" title="Review hôtel / activité">
+                <svg class="w-6 h-6 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
+                </svg>
+                <span class="text-xs text-gray-600 leading-tight">Hôtel / Lieu</span>
+              </div>
+
+              <div class="template-card" onclick="selectTemplate(this, 'comparatif')" title="Comparatif 2 produits">
+                <svg class="w-6 h-6 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/>
+                </svg>
+                <span class="text-xs text-gray-600 leading-tight">Comparatif</span>
+              </div>
+
+            </div>
+            <p id="template-desc" class="mt-2 text-xs text-gray-400">Article long format avec image de couverture et chapô.</p>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Image de couverture -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Image de couverture</h3>
+            <div
+              id="drop-zone"
+              class="relative border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition-colors"
+              onclick="document.getElementById('cover-input').click()"
+              ondragover="handleDragOver(event)"
+              ondragleave="handleDragLeave(event)"
+              ondrop="handleDrop(event)"
+            >
+              <img id="cover-preview" src="" alt="" class="hidden w-full h-32 object-cover rounded-lg mb-3" />
+              <div id="drop-placeholder">
+                <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-xs font-medium text-gray-500">Glisser une image ici</p>
+                <p class="text-xs text-gray-400 mt-0.5">ou cliquer pour parcourir</p>
+                <p class="text-xs text-gray-300 mt-1">PNG, JPG · max 5 Mo</p>
+              </div>
+              <input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)" />
+            </div>
+            <button id="remove-cover-btn" onclick="removeCover()" class="hidden mt-2 text-xs text-red-400 hover:text-red-600 transition-colors w-full text-center">
+              Supprimer l'image
+            </button>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Catégorie -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Catégorie</h3>
+            <select id="cat-select" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400 transition">
+              <option value="">Choisir une catégorie…</option>
+              <optgroup label="Style">
+                <option value="mode">Mode</option>
+              </optgroup>
+              <optgroup label="Escapades">
+                <option value="hotels">Hôtels &amp; Voyages</option>
+                <option value="sport">Tech</option>
+              </optgroup>
+            </select>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mt-4 mb-2">Sous-rubrique</h3>
+            <select id="sub-select" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400 transition">
+              <option value="">Aucune</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1.5">Elle alimente le menu du site et les filtres de la page rubrique.</p>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mt-4 mb-2">Partenariat (mention légale)</h3>
+            <select id="partnership-select" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400 transition">
+              <option value="">Aucun (achat personnel)</option>
+              <option value="offert">Produit offert</option>
+              <option value="pret">Produit prêté</option>
+              <option value="remunere">Contenu rémunéré</option>
+            </select>
+            <input id="partner-input" type="text" placeholder="Nom de la marque (ex : air up)" class="mt-2 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400 transition" />
+            <p class="text-xs text-gray-400 mt-1.5">Obligatoire dès que la marque a offert ou prêté le produit : un encadré « Produit offert » s'affiche en haut de l'article.</p>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Tags</h3>
+            <div id="tags-container" class="flex flex-wrap gap-1.5 mb-2">
+              <!-- tags injectés par JS -->
+            </div>
+            <div class="flex gap-2">
+              <input
+                id="tag-input"
+                type="text"
+                placeholder="Ajouter un tag…"
+                class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 transition"
+                onkeydown="handleTagInput(event)"
+              />
+              <button onclick="addTag()" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm transition-colors font-medium">
+                +
+              </button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1.5">Entrée ou virgule pour valider</p>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- SEO -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">SEO</h3>
+            <div class="space-y-2">
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">Slug URL</label>
+                <input id="slug-input" type="text" placeholder="mon-article-test-produit"
+                  class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white font-mono text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 transition" />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">Meta description <span id="meta-count" class="text-gray-300">(0/160)</span></label>
+                <textarea id="meta-desc" rows="3" placeholder="Résumé affiché dans les résultats Google…"
+                  class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 transition resize-none leading-relaxed"
+                  oninput="metaEdited = true; updateMetaCount()"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Rédacteur -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Rédacteur</h3>
+            <select id="redacteur-select" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400 transition">
+              <option value="">Aucun rédacteur</option>
+            </select>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Localisation -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Localisation</h3>
+            <input id="localisation-input" type="text" placeholder="Paris, Bretagne, Lyon…"
+              class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 transition" />
+            <p class="text-xs text-gray-400 mt-1.5">Pour les articles hôtels et voyages</p>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Lien d'achat -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Lien d'achat</h3>
+            <input id="buy-link-input" type="url" placeholder="https://www.amazon.fr/…"
+              class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 transition" />
+            <p class="text-xs text-gray-400 mt-1.5">Affiché en encart en bas de l'article</p>
+          </div>
+
+          <!-- Séparateur -->
+          <hr class="border-gray-200" />
+
+          <!-- Temps de lecture estimé -->
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-widest text-gray-400">Temps de lecture</span>
+            <span id="read-time" class="text-xs font-medium text-gray-600 bg-white border border-gray-200 px-2 py-1 rounded-full">— min</span>
+          </div>
+
+        </div>
+      </aside>
+
+    </div>
+    </div><!-- fin view-editor -->
+
+    <!-- ===================== VUE : MÉDIAS ===================== -->
+    <div id="view-medias" class="flex-1 overflow-y-auto bg-gray-50 p-8 hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-900">Médias</h2>
+        <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Importer
+          <input type="file" accept="image/*" multiple class="hidden" onchange="importMedias(this)" />
+        </label>
+      </div>
+      <div id="media-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="aspect-square rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 cursor-pointer hover:border-brand-400 hover:text-brand-400 transition-colors" onclick="document.querySelector('#view-medias input[type=file]').click()">
+          <svg class="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          <span class="text-xs font-medium">Ajouter</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== VUE : PARAMÈTRES ===================== -->
+    <div id="view-settings" class="flex-1 overflow-y-auto bg-gray-50 p-8 hidden">
+      <h2 class="text-xl font-bold text-gray-900 mb-6">Paramètres</h2>
+      <div class="max-w-xl space-y-6">
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+          <h3 class="font-semibold text-gray-800">Identité du blog</h3>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Nom du blog</label>
+            <input type="text" value="Les Heures Flâneuses" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Description</label>
+            <textarea rows="2" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none">Lifestyle &amp; tech — des tests et des avis sincères pour vivre mieux.</textarea>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Email de contact</label>
+            <input type="email" placeholder="contact@lesheuresflaneuses.fr" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+          <h3 class="font-semibold text-gray-800">Sécurité</h3>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Mot de passe admin actuel</label>
+            <input type="password" placeholder="••••••••" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Nouveau mot de passe</label>
+            <input type="password" placeholder="••••••••" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <p class="text-xs text-gray-400">Le mot de passe est défini dans le fichier <code class="bg-gray-100 px-1 rounded">index.html</code> — variable <code class="bg-gray-100 px-1 rounded">ADMIN_PASSWORD</code>.</p>
+        </div>
+
+        <button class="w-full px-4 py-2.5 rounded-xl bg-gray-900 text-white font-medium text-sm hover:bg-gray-700 transition-colors">
+          Enregistrer les modifications
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== VUE : RÉDACTEURS ===================== -->
+    <div id="view-redacteurs" class="flex-1 overflow-y-auto bg-gray-50 p-8 hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-900">Rédacteurs</h2>
+        <button onclick="toggleRedacteurForm()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors">
+          + Ajouter un rédacteur
+        </button>
+      </div>
+
+      <!-- Formulaire ajout / édition -->
+      <div id="redacteur-form-wrapper" class="hidden mb-8">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-xl space-y-4">
+          <h3 id="redacteur-form-title" class="font-semibold text-gray-800">Nouveau rédacteur</h3>
+          <input type="hidden" id="redacteur-edit-id" />
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-medium text-gray-500 mb-1 block">Prénom</label>
+              <input id="redacteur-prenom" type="text" placeholder="Marie" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-500 mb-1 block">Nom</label>
+              <input id="redacteur-nom" type="text" placeholder="Dupont" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Photo</label>
+            <div class="flex items-center gap-4">
+              <!-- Prévisualisation -->
+              <div id="redacteur-photo-preview-wrap" class="w-16 h-16 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                <svg id="redacteur-photo-placeholder" class="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                <img id="redacteur-photo-preview" src="" alt="" class="hidden w-full h-full object-cover object-center" />
+              </div>
+              <!-- Bouton upload + champ caché pour stocker la valeur -->
+              <div class="flex-1 space-y-2">
+                <label class="inline-flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-sm text-gray-600 font-medium">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                  Choisir une photo
+                  <input type="file" accept="image/*" class="hidden" onchange="previewRedacteurPhoto(this)" />
+                </label>
+                <p class="text-xs text-gray-400">JPG, PNG · max 2 Mo</p>
+                <button id="redacteur-photo-remove" onclick="removeRedacteurPhoto()" class="hidden text-xs text-red-400 hover:text-red-600 transition-colors">Supprimer la photo</button>
+              </div>
+            </div>
+            <!-- Champ caché qui stocke la valeur finale (base64 ou URL existante) -->
+            <input type="hidden" id="redacteur-photo" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Spécialité <span class="text-gray-300">(affiché sous le nom)</span></label>
+            <input id="redacteur-specialite" type="text" placeholder="Ex : Tests audio & smartphones" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">LinkedIn URL</label>
+            <input id="redacteur-linkedin" type="url" placeholder="https://www.linkedin.com/in/…" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 mb-1 block">Bio courte</label>
+            <textarea id="redacteur-bio" rows="2" placeholder="Passionné de montres, de mode, de voyages…" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"></textarea>
+          </div>
+          <div class="flex gap-3 pt-1">
+            <button onclick="saveRedacteur()" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors">Enregistrer</button>
+            <button onclick="toggleRedacteurForm(false)" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grille des profils -->
+      <div id="redacteurs-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <p class="col-span-3 text-center text-gray-400 py-16">Chargement…</p>
+      </div>
+    </div>
+
+  </div><!-- fin flex-1 main -->
+
+</div>
+
+<!-- ============================================================
+  MODALE RECADRAGE COUVERTURE
+=============================================================== -->
+<div id="crop-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div>
+        <p class="font-semibold text-gray-900 text-sm">Recadrer l'image de couverture</p>
+        <p class="text-xs text-gray-400 mt-0.5">Format 16:9 recommandé</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="cancelCrop()" class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors">Annuler</button>
+        <button onclick="applyCrop()" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors">Appliquer</button>
+      </div>
+    </div>
+    <div class="p-4 bg-gray-950" style="max-height:60vh;overflow:hidden;">
+      <img id="crop-image" src="" alt="" style="max-width:100%;display:block;" />
+    </div>
+    <div class="flex items-center gap-3 px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
+      <span>Ratio :</span>
+      <button onclick="setCropRatio(16/9)" class="px-2 py-1 rounded bg-gray-100 hover:bg-brand-100 hover:text-brand-700 transition-colors font-medium">16:9</button>
+      <button onclick="setCropRatio(4/3)" class="px-2 py-1 rounded bg-gray-100 hover:bg-brand-100 hover:text-brand-700 transition-colors font-medium">4:3</button>
+      <button onclick="setCropRatio(1)" class="px-2 py-1 rounded bg-gray-100 hover:bg-brand-100 hover:text-brand-700 transition-colors font-medium">1:1</button>
+      <button onclick="setCropRatio(NaN)" class="px-2 py-1 rounded bg-gray-100 hover:bg-brand-100 hover:text-brand-700 transition-colors font-medium">Libre</button>
+      <span class="ml-auto">Rotation :</span>
+      <button onclick="rotateCrop(-90)" title="Pivoter à gauche" class="px-2 py-1 rounded bg-gray-100 hover:bg-brand-100 hover:text-brand-700 transition-colors font-medium">↺ 90°</button>
+      <button onclick="rotateCrop(90)" title="Pivoter à droite" class="px-2 py-1 rounded bg-gray-100 hover:bg-brand-100 hover:text-brand-700 transition-colors font-medium">↻ 90°</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+  TOAST NOTIFICATION
+=============================================================== -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-2">
+  <div class="flex items-center gap-3 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-xl">
+    <svg id="toast-icon" class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-msg">Sauvegardé</span>
+  </div>
+</div>
+
+<!-- ============================================================
+  SCRIPTS
+=============================================================== -->
+<script>
+
+  // SUPABASE_URL, SUPABASE_ANON et db sont déjà déclarés par le script de la gate d'authentification, plus haut.
+
+  // --- Navigation entre les vues ---
+  const VIEW_META = {
+    dashboard:  { section: 'Général',  page: 'Tableau de bord' },
+    articles:   { section: 'Contenu',  page: 'Tous les articles' },
+    editor:     { section: 'Contenu',  page: 'Nouvel article' },
+    medias:     { section: 'Contenu',  page: 'Médias' },
+    redacteurs: { section: 'Système',  page: 'Rédacteurs' },
+    settings:   { section: 'Système',  page: 'Paramètres' },
+  };
+
+  function showView(name) {
+    // Masquer toutes les vues
+    ['dashboard','articles','editor','medias','redacteurs','settings'].forEach(v => {
+      const el = document.getElementById('view-' + v);
+      if (el) el.classList.add('hidden');
+    });
+    // Afficher la vue cible
+    const target = document.getElementById('view-' + name);
+    if (target) target.classList.remove('hidden');
+
+    // Mettre à jour le breadcrumb
+    const meta = VIEW_META[name] || {};
+    document.getElementById('breadcrumb-section').textContent = meta.section || '';
+    document.getElementById('breadcrumb-page').textContent   = meta.page || '';
+
+    // Mettre à jour la nav active
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    const navItems = document.querySelectorAll('.nav-item');
+    const order = ['dashboard','articles','editor','medias','redacteurs','settings'];
+    const idx = order.indexOf(name);
+    if (navItems[idx]) navItems[idx].classList.add('active');
+
+    // Charger les données de la vue si nécessaire
+    if (name === 'dashboard')  loadDashboard();
+    if (name === 'articles')   loadArticlesTable();
+    if (name === 'redacteurs') loadRedacteurs();
+    if (name === 'editor')     loadRedacteurSelect();
+  }
+
+  // --- Dashboard : chargement stats + liste récente ---
+  async function loadDashboard() {
+    const { data: all } = await db.from('articles').select('statut, categorie');
+    if (!all) return;
+    const published = all.filter(a => a.statut === 'publié').length;
+    const drafts    = all.filter(a => a.statut === 'brouillon').length;
+    const cats      = new Set(all.map(a => a.categorie).filter(Boolean)).size;
+    document.getElementById('stat-published').textContent = published;
+    document.getElementById('stat-drafts').textContent    = drafts;
+    document.getElementById('stat-cats').textContent      = cats;
+
+    const { data: recent } = await db.from('articles')
+      .select('id, titre, statut, categorie, date_creation')
+      .order('date_creation', { ascending: false }).limit(5);
+
+    const container = document.getElementById('dashboard-articles');
+    if (!recent || !recent.length) {
+      container.innerHTML = '<p class="px-6 py-8 text-sm text-gray-400 text-center">Aucun article pour l\'instant.</p>';
+      return;
+    }
+    container.innerHTML = recent.map(a => `
+      <div class="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition-colors">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-800 truncate">${a.titre}</p>
+          <p class="text-xs text-gray-400">${a.categorie || '—'} · ${new Date(a.date_creation).toLocaleDateString('fr-FR')}</p>
+        </div>
+        <span class="ml-4 shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${a.statut === 'publié' ? 'bg-emerald-100 text-emerald-700' : 'bg-brand-100 text-brand-600'}">
+          ${a.statut}
+        </span>
+      </div>`).join('');
+  }
+
+  // --- Tableau tous les articles ---
+  async function loadArticlesTable() {
+    const tbody = document.getElementById('articles-table-body');
+    const { data, error } = await db.from('articles')
+      .select('id, titre, categorie, statut, date_creation, is_carousel')
+      .order('date_creation', { ascending: false });
+
+    if (error) {
+      console.error('Erreur articles:', error.message);
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-red-400">Erreur : ${error.message}</td></tr>`;
+      return;
+    }
+    if (!data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">Aucun article.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(a => `
+      <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors ${a.is_carousel ? 'bg-brand-50' : ''}">
+        <td class="px-4 py-3 text-center">
+          <button onclick="toggleCarousel('${a.id}', ${a.is_carousel})"
+            title="${a.is_carousel ? 'Retirer du carrousel' : 'Ajouter au carrousel'}"
+            class="text-xl leading-none transition-transform hover:scale-125 ${a.is_carousel ? 'text-brand-400' : 'text-gray-200 hover:text-brand-400'}">
+            ★
+          </button>
+        </td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-800 max-w-xs truncate">${a.titre}</td>
+        <td class="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">${a.categorie || '—'}</td>
+        <td class="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">${new Date(a.date_creation).toLocaleDateString('fr-FR')}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${a.statut === 'publié' ? 'bg-emerald-100 text-emerald-700' : 'bg-brand-100 text-brand-600'}">
+            ${a.statut}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
+          ${a.statut === 'publié' ? `<button onclick="sendNewsletterForArticle('${a.id}')" title="Envoyer newsletter" class="text-xs text-gray-400 hover:text-brand-500 transition-colors">✉️</button>` : ''}
+          <button onclick="editArticle('${a.id}')" class="text-xs text-brand-500 hover:text-brand-700 font-medium transition-colors">Modifier</button>
+          <button onclick="deleteArticle('${a.id}')" class="text-xs text-red-400 hover:text-red-600 transition-colors">Supprimer</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function toggleCarousel(id, isCurrently) {
+    if (!isCurrently) {
+      const { count } = await db.from('articles').select('id', { count: 'exact', head: true }).eq('is_carousel', true);
+      if (count >= 5) { showToast('Maximum 5 articles dans le carrousel.', false); return; }
+    }
+    const { error } = await db.from('articles').update({ is_carousel: !isCurrently }).eq('id', id);
+    if (error) { showToast('Erreur : ' + error.message, false); return; }
+    showToast(isCurrently ? 'Retiré du carrousel' : '⭐ Ajouté au carrousel !');
+    await new Promise(r => setTimeout(r, 300));
+    await loadArticlesTable();
+  }
+
+  let currentEditId = null;
+
+  async function editArticle(id) {
+    const { data: a, error } = await db.from('articles')
+      .select('*').eq('id', id).single();
+    if (error || !a) { showToast('Impossible de charger l\'article.', false); return; }
+
+    currentEditId = id;
+    showView('editor');
+
+    // Remplir les champs
+    document.getElementById('title-input').innerText   = a.titre || '';
+    document.getElementById('excerpt-input').innerText = a.extrait || '';
+    document.getElementById('editor-body').innerHTML   = a.contenu || '';
+    document.getElementById('slug-input').value        = a.slug || '';
+    document.getElementById('meta-desc').value         = a.meta_desc || '';
+    metaEdited = !!a.meta_desc;
+    tags.length = 0; renderTags();
+    if (a.image_url) {
+      showCoverPreview(a.image_url);
+      coverStorageUrl = a.image_url.startsWith('http') ? a.image_url : null;
+    } else {
+      coverStorageUrl = null;
+    }
+
+    // Catégorie
+    const sel = document.getElementById('cat-select');
+    if (sel && a.categorie) sel.value = a.categorie;
+    fillSubSelect(a.categorie || '', a.sous_categorie || '');
+    document.getElementById('partnership-select').value = a.type_partenariat || '';
+    document.getElementById('partner-input').value = a.partenaire || '';
+
+    // Lien d'achat
+    document.getElementById('buy-link-input').value = a.lien_achat || '';
+
+    // Localisation
+    document.getElementById('localisation-input').value = a.localisation || '';
+
+    // Rédacteur
+    await loadRedacteurSelect();
+    if (a.redacteur_id) document.getElementById('redacteur-select').value = a.redacteur_id;
+
+    // Indicateur visuel édition
+    document.getElementById('save-status').innerHTML =
+      '<span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span> Mode édition';
+    VIEW_META.editor.page = 'Modifier l\'article';
+    document.getElementById('breadcrumb-page').textContent = 'Modifier l\'article';
+    updateWordCount();
+    showToast('Article chargé — modifie et republier.');
+  }
+
+  async function deleteArticle(id) {
+    if (!confirm('Supprimer cet article définitivement ?')) return;
+
+    // Récupérer le slug avant suppression pour purger le bon cache
+    const { data: article } = await db.from('articles').select('slug, is_hero').eq('id', id).limit(1);
+
+    const { error } = await db.from('articles').delete().eq('id', id);
+    if (error) {
+      console.error('Erreur suppression:', error);
+      showToast('Erreur : ' + error.message, false);
+      return;
+    }
+
+    // Purger tous les caches liés à cet article
+    if (article && article[0]) {
+      const { slug, is_hero } = article[0];
+      // Cache de la page article
+      if (slug) localStorage.removeItem(`tf_article_${slug}`);
+      // Cache hero si c'était le hero
+      if (is_hero) localStorage.removeItem('tf_hero');
+      // Cache des catégories (on purge tout pour être sûr)
+      ['montres', 'mode', 'sport', 'hotels'].forEach(cat => localStorage.removeItem(`tf_cat_${cat}`));
+    }
+
+    showToast('Article supprimé');
+    loadArticlesTable();
+    loadDashboard();
+  }
+
+  // --- Import médias (aperçu local) ---
+  function importMedias(input) {
+    const grid = document.getElementById('media-grid');
+    Array.from(input.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const div = document.createElement('div');
+        div.className = 'aspect-square rounded-2xl overflow-hidden bg-gray-100';
+        div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover" alt="${file.name}" />`;
+        grid.insertBefore(div, grid.firstChild);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // --- Toolbar format ---
+  function applyFormat(select) {
+    document.execCommand('formatBlock', false, select.value);
+    document.getElementById('editor-body').focus();
+    select.value = 'p';
+  }
+
+  function insertLink() {
+    const url = prompt('URL du lien :');
+    if (!url) return;
+
+    document.execCommand('createLink', false, url);
+
+    // Retrouver le <a> qui vient d'être créé pour lui ajouter target/rel
+    // (createLink ne pose que le href, rien d'autre)
+    const sel = window.getSelection();
+    let a = null;
+    if (sel.rangeCount) {
+      let node = sel.anchorNode;
+      while (node && node.nodeName !== 'A') node = node.parentNode;
+      a = node;
+    }
+    if (!a) {
+      a = Array.from(document.querySelectorAll('#editor-body a'))
+        .find(el => el.getAttribute('href') === url && !el.target);
+    }
+    if (a) {
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    }
+  }
+
+  function insertHR() {
+    document.execCommand('insertHTML', false, '<hr class="my-6 border-gray-200" /><p><br></p>');
+  }
+
+  function applyColor(color) {
+    document.execCommand('foreColor', false, color);
+    document.getElementById('color-swatch').style.background = color;
+    document.getElementById('editor-body').focus();
+  }
+
+  function insertCallout(type) {
+    const styles = {
+      info:    { bg: 'bg-sky-50',    border: 'border-sky-200',   text: 'text-sky-800',   icon: 'ℹ️', label: 'À noter' },
+      warning: { bg: 'bg-brand-50',  border: 'border-brand-100', text: 'text-brand-700', icon: '⚠️', label: 'Attention' },
+    };
+    const s = styles[type];
+    const html = `
+      <div contenteditable="false" class="my-4 p-4 rounded-xl border ${s.border} ${s.bg} select-none">
+        <div class="flex items-start gap-3">
+          <span class="text-lg leading-none mt-0.5">${s.icon}</span>
+          <div>
+            <p class="font-semibold ${s.text} text-sm mb-1">${s.label}</p>
+            <p class="text-sm ${s.text} opacity-80">Cliquez pour modifier ce texte…</p>
+          </div>
+        </div>
+      </div><p><br></p>`;
+    document.execCommand('insertHTML', false, html);
+  }
+
+  function insertRatingBlock() {
+    const html = `
+      <div contenteditable="false" class="my-4 p-4 rounded-xl border border-brand-100 bg-brand-50 flex items-center gap-4 select-none">
+        <div class="text-3xl font-bold text-brand-500">9.2</div>
+        <div>
+          <div class="flex gap-0.5 text-brand-400 text-lg">★★★★★</div>
+          <div class="text-xs text-gray-500 mt-0.5">Note Les Heures Flâneuses</div>
+        </div>
+        <div class="ml-auto text-xs text-gray-400 italic">Bloc notation produit</div>
+      </div><p><br></p>`;
+    document.execCommand('insertHTML', false, html);
+  }
+
+  function insertVerdictBlock() {
+    const html = `
+      <div contenteditable="false" class="verdict-block my-4 select-none" style="border:1px solid #e5e7eb;border-radius:.75rem;background:#f9fafb;overflow:hidden;">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:1rem;">
+          <div style="font-size:2.5rem;font-weight:700;color:#D13C1B;line-height:1;">8.5</div>
+          <div>
+            <div style="color:#D13C1B;font-size:1.1rem;letter-spacing:.05em;">★★★★☆</div>
+            <div style="font-size:.75rem;color:#9ca3af;margin-top:.15rem;">Note Les Heures Flâneuses</div>
+          </div>
+          <div style="margin-left:auto;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;">Verdict rapide</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;padding:1rem 1.25rem;gap:.75rem;">
+          <div>
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#059669;margin-bottom:.4rem;">✓ Points forts</p>
+            <p style="font-size:.85rem;color:#374151;line-height:1.5;">• Point fort 1<br>• Point fort 2<br>• Point fort 3</p>
+          </div>
+          <div>
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#dc2626;margin-bottom:.4rem;">✗ Points faibles</p>
+            <p style="font-size:.85rem;color:#374151;line-height:1.5;">• Point faible 1<br>• Point faible 2</p>
+          </div>
+        </div>
+      </div><p><br></p>`;
+    document.execCommand('insertHTML', false, html);
+  }
+
+  function insertFaqBlock() {
+    const html = `
+      <div class="faq-block my-4" contenteditable="false" style="margin:1rem 0;">
+        <div class="faq-item" style="border:1px solid #e5e7eb;border-radius:.75rem;overflow:hidden;margin-bottom:.5rem;">
+          <div class="faq-question" style="padding:1rem;font-weight:600;color:#111827;background:#f9fafb;font-size:.95rem;">Question 1 ?</div>
+          <div class="faq-answer" style="padding:1rem;color:#4b5563;font-size:.9rem;line-height:1.7;border-top:1px solid #e5e7eb;">Réponse à la question 1.</div>
+        </div>
+        <div class="faq-item" style="border:1px solid #e5e7eb;border-radius:.75rem;overflow:hidden;margin-bottom:.5rem;">
+          <div class="faq-question" style="padding:1rem;font-weight:600;color:#111827;background:#f9fafb;font-size:.95rem;">Question 2 ?</div>
+          <div class="faq-answer" style="padding:1rem;color:#4b5563;font-size:.9rem;line-height:1.7;border-top:1px solid #e5e7eb;">Réponse à la question 2.</div>
+        </div>
+      </div><p><br></p>`;
+    document.execCommand('insertHTML', false, html);
+  }
+
+  // --- Upload image et insertion à la position du curseur ---
+  async function uploadAndInsertImage(file, range) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const editor = document.getElementById('editor-body');
+
+    // Restaurer le range et insérer le placeholder
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const placeholder = document.createElement('span');
+    placeholder.style.cssText = 'display:inline-block;background:#f3f4f6;border-radius:.5rem;padding:.4rem 1rem;color:#9ca3af;font-size:.8rem;margin:.5rem 0;';
+    placeholder.textContent = '⏳ Upload…';
+    range.deleteContents();
+    range.insertNode(placeholder);
+
+    // Upload Supabase
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace('jpeg','jpg');
+    const path = `content/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await db.storage.from('images').upload(path, file, { upsert: true });
+    if (error) { placeholder.remove(); showToast('Erreur upload : ' + error.message, false); return; }
+
+    const { data } = db.storage.from('images').getPublicUrl(path);
+    const img = document.createElement('img');
+    img.src = data.publicUrl;
+    img.className = 'rounded-xl my-4 max-w-full';
+    img.alt = file.name.replace(/\.[^.]+$/, '');
+    placeholder.replaceWith(img);
+    // Placer le curseur après l'image
+    const newRange = document.createRange();
+    newRange.setStartAfter(img);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    showToast('Image insérée');
+    updateWordCount();
+  }
+
+  function handleEditorDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    // Obtenir la position du drop
+    let range;
+    if (document.caretRangeFromPoint) {
+      range = document.caretRangeFromPoint(e.clientX, e.clientY);
+    } else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+      range = document.createRange();
+      range.setStart(pos.offsetNode, pos.offset);
+      range.collapse(true);
+    } else {
+      range = document.createRange();
+      range.selectNodeContents(document.getElementById('editor-body'));
+      range.collapse(false);
+    }
+    uploadAndInsertImage(file, range);
+  }
+
+  function handleEditorPaste(e) {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (items) {
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          const sel = window.getSelection();
+          const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+          if (range) uploadAndInsertImage(file, range);
+          return;
+        }
+      }
+    }
+
+    // Texte/HTML collé depuis un autre site ou un outil IA : on retire tous les styles
+    // parasites (police, interlignage, variables Tailwind…) avant insertion, pour ne garder
+    // que la mise en forme utile (gras, italique, liens, listes…).
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    if (html) {
+      document.execCommand('insertHTML', false, sanitizePastedHTML(html));
+    } else {
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  }
+
+  function sanitizePastedHTML(html) {
+    const ALLOWED_TAGS = new Set(['P','DIV','SPAN','B','STRONG','I','EM','U','A','UL','OL','LI','BR','H2','H3','H4','BLOCKQUOTE']);
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    function clean(node) {
+      Array.from(node.childNodes).forEach(child => {
+        if (child.nodeType === 1) { // élément
+          if (!ALLOWED_TAGS.has(child.tagName)) {
+            // Balise non autorisée (span Google Docs, style, script…) : on garde son contenu, pas la balise
+            while (child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            return;
+          }
+          const keepHref = child.tagName === 'A' ? child.getAttribute('href') : null;
+          Array.from(child.attributes).forEach(attr => child.removeAttribute(attr.name));
+          if (keepHref) child.setAttribute('href', keepHref);
+          clean(child);
+        } else if (child.nodeType !== 3) { // ni texte ni élément (commentaires…)
+          node.removeChild(child);
+        }
+      });
+    }
+    clean(doc.body);
+    return doc.body.innerHTML;
+  }
+
+  let savedRange = null;
+
+  function prepareImageInsert() {
+    // Sauvegarder la position du curseur AVANT que le dialog vole le focus
+    const sel = window.getSelection();
+    const editor = document.getElementById('editor-body');
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      savedRange = sel.getRangeAt(0).cloneRange();
+    } else {
+      // Pas de curseur dans l'éditeur : on crée un range à la fin
+      savedRange = document.createRange();
+      savedRange.selectNodeContents(editor);
+      savedRange.collapse(false);
+    }
+    document.getElementById('inline-img-input').click();
+  }
+
+  async function insertInlineImage(input) {
+    if (!input.files[0]) return;
+    const file = input.files[0];
+    const editor = document.getElementById('editor-body');
+    let range = savedRange;
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+    }
+    await uploadAndInsertImage(file, range);
+    input.value = '';
+    savedRange = null;
+  }
+
+  // --- Empêche les boutons de la barre d'outils de voler le focus/la sélection de l'éditeur ---
+  document.getElementById('editor-toolbar').addEventListener('mousedown', function(e) {
+    if (e.target.closest('button')) e.preventDefault();
+  });
+
+  // --- Utilise de vraies balises <p> pour chaque paragraphe (au lieu de <div> par défaut) ---
+  document.execCommand('defaultParagraphSeparator', false, 'p');
+
+  // --- Liste à puces : comportement façon Word (bascule ON/OFF, une puce par ligne) ---
+  function toggleBulletList() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+
+    // Déjà une liste à puces : on la retire (bascule, comme dans Word)
+    if (document.queryCommandState('insertUnorderedList')) {
+      document.execCommand('insertUnorderedList');
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+
+    // Pas de sélection (juste un curseur) : transforme la ligne courante
+    if (range.collapsed) {
+      document.execCommand('insertUnorderedList');
+      return;
+    }
+
+    const frag = range.cloneContents();
+    const holder = document.createElement('div');
+    holder.appendChild(frag);
+    let html = holder.innerHTML;
+
+    // Normalise les retours à la ligne (<br>, fin de <div>/<p>) en marqueur commun
+    html = html.replace(/<br\s*\/?>/gi, '\n');
+    html = html.replace(/<\/(div|p)>\s*<\1[^>]*>/gi, '\n');
+    html = html.replace(/<\/?(div|p)[^>]*>/gi, '');
+
+    const lines = html.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    // Une seule ligne sélectionnée : comportement natif
+    if (lines.length <= 1) {
+      document.execCommand('insertUnorderedList');
+      return;
+    }
+
+    const listHtml = '<ul>' + lines.map(l => `<li>${l}</li>`).join('') + '</ul>';
+    document.execCommand('insertHTML', false, listHtml);
+  }
+
+  // --- Word count & read time ---
+  function updateWordCount() {
+    const text = document.getElementById('editor-body').innerText.trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    const el = document.getElementById('word-count');
+    el.textContent = words + (words <= 1 ? ' mot' : ' mots');
+    const mins = Math.max(1, Math.round(words / 200));
+    document.getElementById('read-time').textContent = mins + ' min';
+  }
+
+  // --- Save status ---
+  let saveTimer;
+  function updateSaveStatus() {
+    const el = document.getElementById('save-status');
+    el.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span> Modifications non sauvegardées';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      el.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Non sauvegardé';
+    }, 3000);
+    // Auto-generate slug from title
+    const title = document.getElementById('title-input').innerText.trim();
+    let slug = title.toLowerCase()
+      .replace(/\u0153/g, 'oe').replace(/\u00e6/g, 'ae')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+    // Coupe sur un mot entier plut\u00f4t qu'en plein mot au-del\u00e0 de 60 caract\u00e8res
+    if (slug.length > 60) {
+      slug = slug.slice(0, 60).replace(/-[^-]*$/, '');
+    }
+    document.getElementById('slug-input').value = slug;
+  }
+
+  // --- Cover image ---
+  let coverStorageUrl = null; // vraie URL https:// après upload Supabase Storage
+
+  let cropper = null;
+  let cropFile = null;
+
+  function previewCover(input) {
+    if (!input.files[0]) return;
+    cropFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => openCropModal(e.target.result);
+    reader.readAsDataURL(cropFile);
+    input.value = '';
+  }
+
+  function openCropModal(src) {
+    const modal = document.getElementById('crop-modal');
+    const img = document.getElementById('crop-image');
+    img.src = src;
+    modal.classList.remove('hidden');
+    // Attendre que l'image soit rendue
+    setTimeout(() => {
+      if (cropper) { cropper.destroy(); cropper = null; }
+      cropper = new Cropper(img, { aspectRatio: 16/9, viewMode: 1, autoCropArea: 1, movable: true, zoomable: true, rotatable: true });
+    }, 100);
+  }
+
+  function setCropRatio(ratio) {
+    if (cropper) cropper.setAspectRatio(ratio);
+  }
+
+  function rotateCrop(deg) {
+    if (cropper) cropper.rotate(deg);
+  }
+
+  function cancelCrop() {
+    if (cropper) { cropper.destroy(); cropper = null; }
+    document.getElementById('crop-modal').classList.add('hidden');
+    cropFile = null;
+  }
+
+  async function applyCrop() {
+    if (!cropper) return;
+    const canvas = cropper.getCroppedCanvas({ maxWidth: 1920, maxHeight: 1080, imageSmoothingQuality: 'high' });
+    cropper.destroy(); cropper = null;
+    document.getElementById('crop-modal').classList.add('hidden');
+
+    // Aperçu immédiat
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    showCoverPreview(dataUrl);
+
+    // Convertir en Blob et uploader
+    canvas.toBlob(async blob => {
+      const ext = 'jpg';
+      const path = `covers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await db.storage.from('images').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (error) { showToast('Erreur upload : ' + error.message, false); return; }
+      const { data } = db.storage.from('images').getPublicUrl(path);
+      coverStorageUrl = data.publicUrl;
+      document.getElementById('cover-preview').src = coverStorageUrl;
+      showToast('Image de couverture enregistrée');
+    }, 'image/jpeg', 0.92);
+  }
+
+  async function uploadCoverToStorage(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `covers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await db.storage.from('images').upload(path, file, { upsert: true });
+    if (error) { console.error('Erreur upload Storage:', error.message); return; }
+    const { data } = db.storage.from('images').getPublicUrl(path);
+    coverStorageUrl = data.publicUrl;
+    // Remplacer l'aperçu base64 par la vraie URL
+    document.getElementById('cover-preview').src = coverStorageUrl;
+    console.log('[Cover] URL Storage:', coverStorageUrl);
+  }
+
+  function showCoverPreview(src) {
+    const preview = document.getElementById('cover-preview');
+    const placeholder = document.getElementById('drop-placeholder');
+    const removeBtn = document.getElementById('remove-cover-btn');
+    preview.src = src;
+    preview.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+    removeBtn.classList.remove('hidden');
+  }
+
+  function removeCover() {
+    document.getElementById('cover-preview').classList.add('hidden');
+    document.getElementById('cover-preview').src = '';
+    document.getElementById('drop-placeholder').classList.remove('hidden');
+    document.getElementById('remove-cover-btn').classList.add('hidden');
+    document.getElementById('cover-input').value = '';
+    coverStorageUrl = null;
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+  }
+  function handleDragLeave() {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = ev => showCoverPreview(ev.target.result);
+      reader.readAsDataURL(file);
+      uploadCoverToStorage(file);
+    }
+  }
+
+  // --- Template selector ---
+  const templateDescriptions = {
+    classic:    'Article long format avec image de couverture et chapô.',
+    product:    'Test produit : note globale, tableau points forts/faibles, verdict final.',
+    hotel:      'Review hôtel ou lieu : ambiance, situation, rapport qualité/prix, verdict.',
+    comparatif: 'Comparatif deux produits ou adresses côte à côte avec tableau récapitulatif.',
+  };
+  function selectTemplate(el, type) {
+    document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('template-desc').textContent = templateDescriptions[type];
+  }
+
+  // --- Tags ---
+  const tags = [];
+  function renderTags() {
+    const container = document.getElementById('tags-container');
+    container.innerHTML = tags.map((t, i) => `
+      <span class="tag-pill">
+        ${t}
+        <button onclick="removeTag(${i})" class="ml-0.5 text-gray-400 hover:text-red-500 transition-colors leading-none">✕</button>
+      </span>`).join('');
+  }
+  function addTag() {
+    const input = document.getElementById('tag-input');
+    const val = input.value.trim().replace(/,+$/, '');
+    if (val && !tags.includes(val)) { tags.push(val); renderTags(); }
+    input.value = '';
+  }
+  function removeTag(i) { tags.splice(i, 1); renderTags(); }
+  function handleTagInput(e) {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
+  }
+
+  // --- Auto-fill meta description depuis l'extrait ---
+  let metaEdited = false;
+
+  function autoFillMetaDesc() {
+    if (metaEdited) return;
+    const excerpt = document.getElementById('excerpt-input').innerText.trim();
+    const meta = document.getElementById('meta-desc');
+    meta.value = excerpt.slice(0, 160);
+    updateMetaCount();
+  }
+
+  // --- Auto-suggestion de tags depuis le titre + catégorie ---
+  const STOPWORDS = new Set(['le','la','les','de','du','des','un','une','et','en','au','aux','sur','par','pour','dans','avec','ce','se','est','sont','mon','ton','son','ma','ta','sa','notre','votre','leur','leurs','que','qui','dont','très','plus','mais','même','tout','tous','cette','cet','bien','aussi','comme','test','avis','après','avant']);
+
+  const CAT_TAGS = {
+    mode:      'Mode',
+    sport:     'Tech',
+    hotels:    'Hôtels & Voyages',
+  };
+
+  function autoSuggestTags() {
+    if (tags.length > 0) return;
+    const title = document.getElementById('title-input').innerText.trim();
+    if (!title) return;
+    const cat = document.getElementById('cat-select').value;
+
+    const words = title.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !STOPWORDS.has(w));
+
+    const suggested = [...new Set(words)].slice(0, 3)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1));
+
+    if (cat && CAT_TAGS[cat]) suggested.unshift(CAT_TAGS[cat]);
+
+    suggested.forEach(t => { if (!tags.includes(t)) tags.push(t); });
+    renderTags();
+  }
+
+  // --- Meta description counter ---
+  function updateMetaCount() {
+    const len = document.getElementById('meta-desc').value.length;
+    const el = document.getElementById('meta-count');
+    el.textContent = `(${len}/160)`;
+    el.className = len > 160 ? 'text-red-400' : len > 130 ? 'text-brand-400' : 'text-gray-300';
+  }
+
+  // --- Toast ---
+  function showToast(msg, success = true) {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    icon.className = `w-4 h-4 shrink-0 ${success ? 'text-emerald-400' : 'text-red-400'}`;
+    toast.classList.remove('opacity-0', 'translate-y-2');
+    toast.classList.add('opacity-100', 'translate-y-0');
+    setTimeout(() => {
+      toast.classList.remove('opacity-100', 'translate-y-0');
+      toast.classList.add('opacity-0', 'translate-y-2');
+    }, 3000);
+  }
+
+  // --- Collecte les données du formulaire ---
+  function collectFormData(statut) {
+    const redacteurVal = (document.getElementById('redacteur-select').value || '').trim();
+    // Valider que c'est bien un UUID v4 (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const redacteur_id = uuidRegex.test(redacteurVal) ? redacteurVal : null;
+
+    const coverEl = document.getElementById('cover-preview');
+    const coverVisible = !coverEl.classList.contains('hidden') && coverEl.src
+      && !coverEl.src.endsWith('admin.html') && !coverEl.src.endsWith('/');
+    // Priorité : URL Supabase Storage (https://) > src de l'aperçu (peut être base64)
+    const image_url = coverVisible ? (coverStorageUrl || coverEl.src) : null;
+    return {
+      titre:         document.getElementById('title-input').innerText.trim(),
+      extrait:       document.getElementById('excerpt-input').innerText.trim(),
+      contenu:       document.getElementById('editor-body').innerHTML.trim(),
+      slug:          document.getElementById('slug-input').value.trim(),
+      categorie:     document.getElementById('cat-select').value,
+      sous_categorie: document.getElementById('sub-select').value || null,
+      type_partenariat: document.getElementById('partnership-select').value || null,
+      partenaire:    document.getElementById('partner-input').value.trim() || null,
+      tags:          [...tags],
+      image_url,
+      statut,
+      temps_lecture: parseInt(document.getElementById('read-time').textContent) || null,
+      redacteur_id,
+      lien_achat:        document.getElementById('buy-link-input').value.trim() || null,
+      localisation:      document.getElementById('localisation-input').value.trim() || null,
+      date_modification: new Date().toISOString(),
+    };
+  }
+
+  // --- Draft & Publish ---
+  async function saveDraft() {
+    const data = collectFormData('brouillon');
+    if (!data.titre) { showToast('Ajoutez un titre avant de sauvegarder.', false); return; }
+    if (data.contenu && data.contenu.includes('data:image')) {
+      data.contenu = await processContentImages(data.contenu);
+    }
+
+    let error;
+    if (currentEditId) {
+      ({ error } = await db.from('articles').update(data).eq('id', currentEditId));
+    } else {
+      ({ error } = await db.from('articles').insert([data]));
+    }
+    if (error) {
+      console.error('Erreur brouillon:', error);
+      showToast('Erreur : ' + error.message, false);
+      return;
+    }
+    // Purger le cache de cet article
+    if (data.slug) localStorage.removeItem(`tf_article_${data.slug}`);
+    ['montres', 'mode', 'sport', 'hotels'].forEach(cat => localStorage.removeItem(`tf_cat_${cat}`));
+
+    document.getElementById('save-status').innerHTML =
+      '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Brouillon sauvegardé';
+    showToast('Brouillon enregistré avec succès');
+  }
+
+  // Détecte les images base64 dans le contenu HTML, les uploade sur Supabase Storage
+  // et remplace les data: URLs par de vraies URLs https://
+  async function processContentImages(html) {
+    if (!html || !html.includes('data:image')) return html;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const images = doc.querySelectorAll('img[src^="data:"]');
+    for (const img of images) {
+      try {
+        const res = await fetch(img.src);
+        const blob = await res.blob();
+        const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+        const path = `content/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await db.storage.from('images').upload(path, blob, { upsert: true });
+        if (error) throw error;
+        const { data } = db.storage.from('images').getPublicUrl(path);
+        img.src = data.publicUrl;
+      } catch(err) {
+        console.error('Erreur upload image contenu:', err);
+        img.remove(); // supprimer l'image si l'upload échoue
+      }
+    }
+    return doc.body.innerHTML;
+  }
+
+  async function publishArticle() {
+    const data = collectFormData('publié');
+    if (!data.titre) { showToast('Ajoutez un titre avant de publier.', false); return; }
+    if (!data.slug)  { showToast('Ajoutez un slug avant de publier.', false); return; }
+
+    // Traiter les images base64 dans le contenu avant d'envoyer à Supabase
+    if (data.contenu && data.contenu.includes('data:image')) {
+      showToast('Traitement des images en cours…');
+      data.contenu = await processContentImages(data.contenu);
+    }
+
+    const isUpdate = !!currentEditId;
+    console.log('[Publish] isUpdate:', isUpdate, '| currentEditId:', currentEditId);
+    console.log('[Publish] data:', JSON.stringify({ ...data, contenu: '...' }));
+
+    let error;
+    if (isUpdate) {
+      ({ error } = await db.from('articles').update(data).eq('id', currentEditId));
+    } else {
+      ({ error } = await db.from('articles').insert([data]));
+    }
+
+    if (error) {
+      console.error('[Publish] Erreur:', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint);
+      showToast('Erreur : ' + (error.message || JSON.stringify(error)), false);
+      return;
+    }
+
+    // Purger TOUS les caches liés à cet article pour que le site soit à jour partout
+    localStorage.removeItem('tf_hero');
+    localStorage.removeItem(`tf_article_${data.slug}`);
+    ['montres', 'mode', 'sport', 'hotels'].forEach(cat => localStorage.removeItem(`tf_cat_${cat}`));
+
+    document.getElementById('save-status').innerHTML =
+      '<span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span> Publié';
+
+    const sendNl = document.getElementById('send-newsletter-check').checked;
+    showPublishSuccess(data.slug, data.titre, data.extrait, data.image_url, isUpdate, sendNl);
+
+    if (!isUpdate) {
+      // Réinitialiser l'éditeur pour un nouvel article
+      document.getElementById('title-input').innerText   = '';
+      document.getElementById('excerpt-input').innerText = '';
+      document.getElementById('editor-body').innerHTML   = '';
+      document.getElementById('slug-input').value        = '';
+      document.getElementById('meta-desc').value         = '';
+      document.getElementById('cat-select').value        = '';
+      fillSubSelect('', '');
+      document.getElementById('partnership-select').value = '';
+      document.getElementById('partner-input').value = '';
+      document.getElementById('redacteur-select').value  = '';
+      removeCover();
+      tags.length = 0;
+      renderTags();
+      updateWordCount();
+    }
+    currentEditId = null;
+    VIEW_META.editor.page = 'Nouvel article';
+  }
+
+  function showPublishSuccess(slug, titre, extrait, imageUrl, isUpdate, sendNl = true) {
+    const articleUrl = `https://lesheuresflaneuses.fr/article.html?slug=${slug}`;
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').innerHTML = isUpdate
+      ? `Article mis à jour ! <a href="${articleUrl}" target="_blank" class="underline ml-1">Voir en ligne →</a>`
+      : `Publié ! <a href="${articleUrl}" target="_blank" class="underline ml-1">Voir en ligne →</a>`;
+    document.getElementById('toast-icon').className = 'w-4 h-4 shrink-0 text-emerald-400';
+    toast.classList.remove('opacity-0', 'translate-y-2');
+    toast.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+    setTimeout(() => {
+      toast.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+      toast.classList.add('opacity-0', 'translate-y-2');
+    }, 6000);
+
+    // Proposer l'envoi newsletter si la case est cochée (nouvel article ou mise à jour)
+    if (sendNl) {
+      showNewsletterPrompt(slug, titre, extrait, imageUrl, articleUrl, isUpdate);
+    }
+  }
+
+  function showNewsletterPrompt(slug, titre, extrait, imageUrl, articleUrl, isUpdate = false) {
+    const existing = document.getElementById('newsletter-prompt');
+    if (existing) existing.remove();
+
+    const label = isUpdate ? 'Notifier les abonnés de la mise à jour ?' : 'Envoyer la newsletter ?';
+
+    const prompt = document.createElement('div');
+    prompt.id = 'newsletter-prompt';
+    prompt.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-white border border-gray-100 shadow-2xl rounded-2xl px-6 py-5 flex items-center gap-5 max-w-md w-full mx-4';
+    prompt.innerHTML = `
+      <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-gray-900">${label}</p>
+        <p class="text-xs text-gray-400 mt-0.5" id="nl-count">Chargement des abonnés…</p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <button id="nl-send-btn"
+          class="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          Envoyer
+        </button>
+        <button id="nl-dismiss-btn"
+          class="px-3 py-2 rounded-xl border border-gray-200 text-gray-500 text-xs hover:bg-gray-50 transition-colors">
+          Ignorer
+        </button>
+      </div>
+    `;
+    document.body.appendChild(prompt);
+
+    // Attacher les listeners proprement (évite les problèmes d'échappement dans onclick)
+    prompt.querySelector('#nl-send-btn').addEventListener('click', () => sendNewsletter(slug, titre, extrait, imageUrl, articleUrl));
+    prompt.querySelector('#nl-dismiss-btn').addEventListener('click', () => prompt.remove());
+
+    // Compter les abonnés
+    db.from('abonnes').select('*', { count: 'exact', head: true }).then(({ count }) => {
+      const n = count || 0;
+      const el = document.getElementById('nl-count');
+      if (!el) return;
+      el.textContent = n > 0
+        ? `${n} abonné${n > 1 ? 's' : ''} vont recevoir cet email`
+        : 'Aucun abonné pour l\'instant';
+      if (n === 0) document.getElementById('nl-send-btn').disabled = true;
+    });
+  }
+
+  // Déclencher la newsletter manuellement depuis la liste d'articles
+  async function sendNewsletterForArticle(id) {
+    const { data: a } = await db.from('articles').select('slug, titre, extrait, image_url').eq('id', id).single();
+    if (!a) { showToast('Impossible de charger l\'article.', false); return; }
+    const articleUrl = `https://lesheuresflaneuses.fr/article.html?slug=${a.slug}`;
+    showNewsletterPrompt(a.slug, a.titre, a.extrait, a.image_url, articleUrl, false);
+  }
+
+  async function sendNewsletter(slug) {
+    // L'envoi se fait côté serveur (fonction Supabase « send-newsletter ») : la clé Brevo n'est plus dans cette page.
+    const btn = document.getElementById('nl-send-btn');
+    if (btn) { btn.textContent = 'Envoi…'; btn.disabled = true; }
+    try {
+      const { data, error } = await db.functions.invoke('send-newsletter', { body: { slug } });
+      if (error) {
+        let msg = error.message || 'Erreur serveur';
+        try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
+        throw new Error(msg);
+      }
+      document.getElementById('newsletter-prompt')?.remove();
+      if (!data || !data.total) { showToast("Aucun abonné pour l'instant.", false); return; }
+      showToast(data.failed === 0
+        ? `Newsletter envoyée à ${data.sent} abonné${data.sent > 1 ? 's' : ''} !`
+        : `Envoyé à ${data.sent}, échec pour ${data.failed}.`,
+        data.failed === 0);
+    } catch (err) {
+      console.error('[NL] Erreur :', err);
+      document.getElementById('newsletter-prompt')?.remove();
+      showToast('Erreur newsletter : ' + err.message, false);
+    }
+  }
+
+
+  // --- Sous-rubriques (liste liée à la catégorie choisie) ---
+  function fillSubSelect(cat, current) {
+    const sel = document.getElementById('sub-select');
+    if (!sel) return;
+    const g = window.groupOfCat ? window.groupOfCat(cat) : null;
+    const list = g ? window.SUBCATS[g].subs : [];
+    sel.innerHTML = '<option value="">Aucune</option>' + list.map(x => `<option value="${x.id}">${x.label}</option>`).join('');
+    sel.value = list.some(x => x.id === current) ? current : '';
+    sel.disabled = !list.length;
+  }
+  document.getElementById('cat-select').addEventListener('change', e => fillSubSelect(e.target.value, ''));
+  fillSubSelect('', '');
+
+  // --- Init default tags ---
+  ['UGC', 'Test produit'].forEach(t => tags.push(t));
+  renderTags();
+
+  // ============================================================
+  // RÉDACTEURS
+  // ============================================================
+
+  function previewRedacteurPhoto(input) {
+    if (!input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) { showToast('Photo trop lourde (max 2 Mo)', false); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('redacteur-photo').value = e.target.result;
+      document.getElementById('redacteur-photo-preview').src = e.target.result;
+      document.getElementById('redacteur-photo-preview').classList.remove('hidden');
+      document.getElementById('redacteur-photo-placeholder').classList.add('hidden');
+      document.getElementById('redacteur-photo-remove').classList.remove('hidden');
+      document.getElementById('redacteur-photo-preview-wrap').classList.remove('border-dashed');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeRedacteurPhoto() {
+    document.getElementById('redacteur-photo').value = '';
+    document.getElementById('redacteur-photo-preview').src = '';
+    document.getElementById('redacteur-photo-preview').classList.add('hidden');
+    document.getElementById('redacteur-photo-placeholder').classList.remove('hidden');
+    document.getElementById('redacteur-photo-remove').classList.add('hidden');
+    document.getElementById('redacteur-photo-preview-wrap').classList.add('border-dashed');
+  }
+
+  function setRedacteurPhotoPreview(url) {
+    if (!url) return;
+    document.getElementById('redacteur-photo').value = url;
+    document.getElementById('redacteur-photo-preview').src = url;
+    document.getElementById('redacteur-photo-preview').classList.remove('hidden');
+    document.getElementById('redacteur-photo-placeholder').classList.add('hidden');
+    document.getElementById('redacteur-photo-remove').classList.remove('hidden');
+    document.getElementById('redacteur-photo-preview-wrap').classList.remove('border-dashed');
+  }
+
+  function toggleRedacteurForm(show) {
+    const wrapper = document.getElementById('redacteur-form-wrapper');
+    const isHidden = wrapper.classList.contains('hidden');
+    if (show === false || !isHidden) {
+      wrapper.classList.add('hidden');
+      document.getElementById('redacteur-edit-id').value    = '';
+      document.getElementById('redacteur-prenom').value     = '';
+      document.getElementById('redacteur-nom').value        = '';
+      document.getElementById('redacteur-bio').value        = '';
+      document.getElementById('redacteur-specialite').value = '';
+      document.getElementById('redacteur-linkedin').value   = '';
+      removeRedacteurPhoto();
+      document.getElementById('redacteur-form-title').textContent = 'Nouveau rédacteur';
+    } else {
+      wrapper.classList.remove('hidden');
+      document.getElementById('redacteur-prenom').focus();
+    }
+  }
+
+  async function loadRedacteurs() {
+    const grid = document.getElementById('redacteurs-grid');
+    const { data, error } = await db.from('redacteurs').select('*').order('nom');
+    if (error) {
+      grid.innerHTML = `<p class="col-span-3 text-center text-red-400 py-16">Erreur : ${error.message}</p>`;
+      return;
+    }
+    if (!data || !data.length) {
+      grid.innerHTML = `<p class="col-span-3 text-center text-gray-400 py-16">Aucun rédacteur pour l'instant. Ajoutez-en un !</p>`;
+      return;
+    }
+    grid.innerHTML = data.map(r => {
+      const avatar = r.photo_url
+        ? `<div class="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-gray-100 bg-gray-50"><img src="${r.photo_url}" alt="${r.prenom} ${r.nom}" class="w-full h-full object-cover object-center" /></div>`
+        : `<div class="w-20 h-20 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0 text-brand-600 font-bold text-2xl">${r.prenom[0]}${r.nom[0]}</div>`;
+      return `
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4">
+          <div class="flex items-center gap-4">
+            ${avatar}
+            <div class="min-w-0">
+              <p class="font-semibold text-gray-900 truncate">${r.prenom} ${r.nom}</p>
+              <p class="text-xs text-brand-500 mt-0.5 truncate">${r.specialite || 'Rédacteur'}</p>
+              ${r.linkedin_url ? `<a href="${r.linkedin_url}" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 hover:text-brand-500 transition-colors">LinkedIn →</a>` : ''}
+            </div>
+          </div>
+          ${r.bio ? `<p class="text-sm text-gray-500 leading-relaxed">${r.bio}</p>` : ''}
+          <div class="flex gap-2 mt-auto pt-2 border-t border-gray-50">
+            <button onclick="editRedacteur('${r.id}')" class="flex-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors py-1">Modifier</button>
+            <button onclick="deleteRedacteur('${r.id}')" class="flex-1 text-xs font-medium text-red-400 hover:text-red-600 transition-colors py-1">Supprimer</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function saveRedacteur() {
+    const id     = document.getElementById('redacteur-edit-id').value;
+    const prenom = document.getElementById('redacteur-prenom').value.trim();
+    const nom    = document.getElementById('redacteur-nom').value.trim();
+    const photo  = document.getElementById('redacteur-photo').value.trim();
+    const bio    = document.getElementById('redacteur-bio').value.trim();
+
+    if (!prenom || !nom) { showToast('Prénom et nom obligatoires.', false); return; }
+
+    const specialite   = document.getElementById('redacteur-specialite').value.trim();
+    const linkedin_url = document.getElementById('redacteur-linkedin').value.trim();
+    const payload = { prenom, nom, photo_url: photo || null, bio: bio || null, specialite: specialite || null, linkedin_url: linkedin_url || null };
+    let error;
+    if (id) {
+      ({ error } = await db.from('redacteurs').update(payload).eq('id', id));
+    } else {
+      ({ error } = await db.from('redacteurs').insert([payload]));
+    }
+    if (error) { showToast('Erreur : ' + error.message, false); return; }
+    showToast(id ? 'Rédacteur mis à jour !' : 'Rédacteur ajouté !');
+    toggleRedacteurForm(false);
+    loadRedacteurs();
+  }
+
+  async function editRedacteur(id) {
+    const { data: r, error } = await db.from('redacteurs').select('*').eq('id', id).single();
+    if (error || !r) { showToast('Impossible de charger le rédacteur.', false); return; }
+    document.getElementById('redacteur-edit-id').value    = r.id;
+    document.getElementById('redacteur-prenom').value     = r.prenom;
+    document.getElementById('redacteur-nom').value        = r.nom;
+    document.getElementById('redacteur-bio').value        = r.bio || '';
+    document.getElementById('redacteur-specialite').value = r.specialite || '';
+    document.getElementById('redacteur-linkedin').value   = r.linkedin_url || '';
+    removeRedacteurPhoto();
+    if (r.photo_url) setRedacteurPhotoPreview(r.photo_url);
+    document.getElementById('redacteur-form-title').textContent = 'Modifier le rédacteur';
+    document.getElementById('redacteur-form-wrapper').classList.remove('hidden');
+    document.getElementById('redacteur-prenom').focus();
+  }
+
+  async function deleteRedacteur(id) {
+    if (!confirm('Supprimer ce rédacteur ?')) return;
+    const { error } = await db.from('redacteurs').delete().eq('id', id);
+    if (error) { showToast('Erreur : ' + error.message, false); return; }
+    showToast('Rédacteur supprimé');
+    loadRedacteurs();
+  }
+
+  async function loadRedacteurSelect() {
+    const sel = document.getElementById('redacteur-select');
+    const { data } = await db.from('redacteurs').select('id, prenom, nom').order('nom');
+    // Conserver la valeur actuelle
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Aucun rédacteur</option>';
+    if (data && data.length) {
+      data.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = `${r.prenom} ${r.nom}`;
+        sel.appendChild(opt);
+      });
+    }
+    if (current) sel.value = current;
+  }
+
+
+  // --- Vue initiale ---
+  showView('dashboard');
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261013" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20261013" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20261013" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="" id="meta-desc" />
+  <link rel="canonical" href="https://lesheuresflaneuses.fr/article.html" id="canonical-link" />
+  <meta name="twitter:card" content="summary_large_image" id="twitter-card" />
+  <title>Les Heures Flâneuses</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css?v=20261015" />
+  <script src="/time-ambience.js"></script>
+  <script src="/subcats.js?v=20261013"></script>
+  <script src="/nav.js?v=20261014" defer></script>
+  <style>
+    /* Article content styles */
+    .article-content h2 { font-size:1.5rem; font-weight:700; color:var(--ink); margin:2rem 0 .75rem; font-family:var(--font-display); }
+    .article-content h3 { font-size:1.2rem; font-weight:700; color:var(--ink); margin:1.5rem 0 .5rem; font-family:var(--font-display); }
+    .article-content h4 { font-size:1rem; font-weight:600; color:var(--ink); margin:1.25rem 0 .4rem; }
+    /* L'éditeur produit des <div> (pas des <p>) pour chaque paragraphe : on les stylise pareil,
+       en excluant les blocs spéciaux (contenteditable="false" : verdict, FAQ, notation, encadrés). */
+    .article-content p,
+    .article-content > div:not([contenteditable="false"]) {
+      margin:.9rem 0; line-height:1.85; color:var(--ink-soft); font-size:1.0625rem;
+    }
+    /* Faux titres : texte entièrement en gras (cet éditeur ne pose pas toujours de vraie balise Hx) */
+    .article-content .fake-heading {
+      font-size:1.3rem !important; font-weight:700; color:var(--ink); font-family:var(--font-display);
+      margin:2.25rem 0 .75rem !important; line-height:1.35 !important;
+    }
+    .article-content ul, .article-content ol { margin:.9rem 0 .9rem 1.5rem; }
+    .article-content ul { list-style:disc; }
+    .article-content ol { list-style:decimal; }
+    .article-content li { margin:.35rem 0; line-height:1.7; color:var(--ink-soft); }
+    .article-content a  { color:var(--accent); text-decoration:underline; }
+    .article-content a:hover { color:var(--accent-deep); }
+    .article-content blockquote { border-left:3px solid var(--accent); padding-left:1rem; margin:1.5rem 0; color:var(--ink-soft); font-style:italic; font-family:var(--font-display); }
+    .article-content hr { margin:2rem 0; border-color:var(--line); }
+    .article-content img { border-radius:2px; margin:1.5rem 0; max-width:100%; }
+    .article-content strong { font-weight:600; color:var(--ink); }
+    /* Bloc Verdict rapide */
+    /* Mention légale : produit offert / prêté / contenu rémunéré */
+    .disclosure { margin:0 0 2rem; padding:1rem 1.25rem; border:1px solid var(--accent); border-left-width:4px; background:var(--paper-raised); border-radius:.25rem; }
+    .disclosure-label { margin:0 0 .25rem; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-deep); }
+    .disclosure-text { margin:0; font-size:.95rem; line-height:1.6; color:var(--ink); }
+    .article-content .verdict-block { margin:1.5rem 0; border-radius:.75rem; border:1px solid var(--line); background:var(--paper-raised); overflow:hidden; }
+    .article-content img { cursor:zoom-in; }
+    .article-content a img { cursor:pointer; }
+    .article-content img:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+    #lightbox { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; padding:3.5rem 1rem 4rem; background:rgba(15,12,10,.94); }
+    #lightbox.open { display:flex; }
+    #lightbox figure { margin:0; max-width:100%; max-height:100%; display:flex; flex-direction:column; align-items:center; gap:.75rem; }
+    #lightbox img { display:block; max-width:100%; max-height:calc(100vh - 11rem); width:auto; height:auto; object-fit:contain; border-radius:2px; cursor:default; }
+    #lightbox figcaption { max-width:42rem; text-align:center; font-size:.875rem; line-height:1.5; color:#DCC9BA; }
+    #lightbox .lb-btn { position:absolute; width:2.75rem; height:2.75rem; border-radius:50%; border:1px solid rgba(246,234,223,.25); background:rgba(43,27,21,.6); color:#F6EADF; font-size:1.75rem; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s ease; }
+    #lightbox .lb-btn:hover, #lightbox .lb-btn:focus-visible { background:var(--accent); outline:none; }
+    #lightbox .lb-close { top:1rem; right:1rem; }
+    #lightbox .lb-nav { top:50%; transform:translateY(-50%); }
+    #lightbox .lb-prev { left:1rem; }
+    #lightbox .lb-next { right:1rem; }
+    #lightbox.single .lb-nav { display:none; }
+    @media (max-width:640px) { #lightbox .lb-nav { top:auto; bottom:1rem; transform:none; } #lightbox .lb-prev { left:calc(50% - 3.5rem); } #lightbox .lb-next { right:calc(50% - 3.5rem); } }
+    .meta-sep { display:none; }
+    @media (min-width:640px) { .meta-sep { display:inline; } }
+    /* Figures et galerie photo */
+    .article-content figure.article-figure { margin:2rem 0; }
+    .article-content figure.article-figure img { display:block; width:100%; height:auto; margin:0; border-radius:2px; }
+    .article-content figure.article-figure.portrait { max-width:26rem; margin-inline:auto; }
+    .article-content figcaption { margin-top:.6rem; font-size:.85rem; line-height:1.5; font-style:italic; color:var(--ink-soft); }
+    .article-content .photo-gallery { margin:2rem 0; display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; }
+    .article-content .photo-gallery figure { margin:0; }
+    .article-content .photo-gallery img { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; margin:0; border-radius:2px; }
+    @media (max-width:640px) {
+      .article-content .photo-gallery { grid-template-columns:repeat(2,1fr); gap:.5rem; }
+      .article-content .photo-gallery figure:last-child:nth-child(odd) { grid-column:1 / -1; }
+      .article-content .photo-gallery figure:last-child:nth-child(odd) img { aspect-ratio:4/3; }
+    }
+    /* Tableau de caractéristiques */
+    .article-content .spec-table { margin:1.5rem 0; border:1px solid var(--line); border-radius:.75rem; overflow:hidden; background:var(--paper-raised); }
+    .article-content .spec-table table { width:100%; border-collapse:collapse; font-size:.95rem; }
+    .article-content .spec-table th, .article-content .spec-table td { padding:.75rem 1.1rem; text-align:left; vertical-align:top; border-top:1px solid var(--line); line-height:1.5; }
+    .article-content .spec-table tr:first-child th, .article-content .spec-table tr:first-child td { border-top:0; }
+    .article-content .spec-table th { width:36%; font-weight:600; color:var(--ink); }
+    .article-content .spec-table td { color:var(--ink-soft); }
+    /* En bref : points forts / points faibles */
+    .article-content .pros-cons { margin:1.75rem 0; display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    @media (max-width:640px) { .article-content .pros-cons { grid-template-columns:1fr; } }
+    .article-content .pros-cons .pc-col { border:1px solid var(--line); border-radius:.75rem; padding:1.1rem 1.25rem; background:var(--paper-raised); }
+    .article-content .pros-cons .pc-title { margin:0 0 .5rem; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); }
+    .article-content .pros-cons .pc-pros .pc-title { color:#3BA17D; }
+    .article-content .pros-cons .pc-cons .pc-title { color:var(--accent); }
+    .article-content .pros-cons ul { margin:0; padding:0; list-style:none; }
+    .article-content .pros-cons li { position:relative; margin:.3rem 0; padding-left:1.1rem; font-size:.92rem; line-height:1.5; }
+    .article-content .pros-cons li::before { content:""; position:absolute; left:0; top:.6em; width:.45rem; height:.45rem; border-radius:50%; background:var(--line); }
+    .article-content .pros-cons .pc-pros li::before { background:#3BA17D; }
+    .article-content .pros-cons .pc-cons li::before { background:var(--accent); }
+    /* Notation par critère */
+    .article-content .score-block { margin:2rem 0; border:1px solid var(--line); border-radius:.75rem; background:var(--paper-raised); overflow:hidden; }
+    .article-content .score-head { display:flex; align-items:center; gap:1.25rem; padding:1.25rem 1.5rem; border-bottom:1px solid var(--line); }
+    .article-content .score-note { font-family:var(--font-display); font-size:3rem; font-weight:700; line-height:1; color:var(--accent); font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .article-content .score-note span { margin-left:.15rem; font-size:1.1rem; font-weight:500; color:var(--ink-soft); }
+    .article-content .score-title { font-weight:700; color:var(--ink); }
+    .article-content .score-sub { margin-top:.2rem; font-size:.9rem; line-height:1.45; color:var(--ink-soft); }
+    .article-content .score-criteria { list-style:none; margin:0; padding:1.1rem 1.5rem 1.25rem; display:grid; gap:1.1rem; }
+    .article-content .score-criteria li { margin:0; }
+    .article-content .crit-top { display:flex; justify-content:space-between; gap:1rem; font-weight:600; font-size:.95rem; color:var(--ink); font-variant-numeric:tabular-nums; }
+    .article-content .crit-bar { position:relative; height:6px; margin:.45rem 0; border-radius:3px; background:var(--line); overflow:hidden; }
+    .article-content .crit-bar::after { content:""; position:absolute; inset:0 auto 0 0; width:var(--w, 0%); border-radius:3px; background:var(--accent); }
+    .article-content .crit-note { margin:0; font-size:.875rem; line-height:1.5; color:var(--ink-soft); }
+    @media (max-width:640px) { .article-content .score-head { flex-direction:column; align-items:flex-start; gap:.75rem; } }
+    .article-content .score-block > .pros-cons { margin:0; padding:1.1rem 1.5rem 1.25rem; }
+    .article-content .score-block > .pros-cons .pc-col { border:0; background:transparent; padding:0; }
+    /* Sommaire */
+    .article-content h2 { scroll-margin-top: 5rem; }
+    .article-content .toc { margin:1.75rem 0 2rem; border:1px solid var(--line); border-radius:.75rem; background:var(--paper-raised); padding:0 1.5rem; }
+    .article-content .toc summary { cursor:pointer; list-style:none; padding:1rem 0; font-weight:600; font-size:.8rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); display:flex; justify-content:space-between; align-items:center; }
+    .article-content .toc summary::-webkit-details-marker { display:none; }
+    .article-content .toc summary::after { content:"−"; font-size:1.25rem; letter-spacing:0; }
+    .article-content .toc:not([open]) summary::after { content:"+"; }
+    .article-content .toc ol { margin:0; padding:0 0 1.1rem; list-style:none; counter-reset:toc; display:grid; gap:.1rem; }
+    .article-content .toc li { counter-increment:toc; margin:0; }
+    .article-content .toc li a { display:flex; gap:.75rem; padding:.4rem 0; font-size:.95rem; line-height:1.4; color:var(--ink); text-decoration:none; transition:color .2s ease; }
+    .article-content .toc li a::before { content:counter(toc, decimal-leading-zero); font-variant-numeric:tabular-nums; color:var(--accent); font-size:.8rem; padding-top:.15rem; }
+    .article-content .toc li a:hover, .article-content .toc li a:focus-visible { color:var(--accent); }
+    /* Bloc FAQ */
+    .article-content .faq-block { margin:2rem 0; display:flex; flex-direction:column; gap:.75rem; }
+    .article-content .faq-item { background:var(--paper-raised); border:1px solid var(--line); border-radius:.75rem; overflow:hidden; transition:border-color .2s ease, box-shadow .2s ease; }
+    .article-content .faq-item:hover { box-shadow:0 4px 12px rgba(0,0,0,.06); }
+    .article-content .faq-item[open] { border-color:var(--accent); box-shadow:0 4px 16px color-mix(in srgb, var(--accent) 14%, transparent); }
+    .article-content .faq-question { position:relative; display:block; cursor:pointer; list-style:none; padding:1.1rem 3.5rem 1.1rem 1.5rem; font-weight:600; font-size:1rem; line-height:1.5; color:var(--ink); transition:color .2s ease; }
+    .article-content .faq-question::-webkit-details-marker { display:none; }
+    .article-content .faq-question::after { content:"+"; position:absolute; right:1.25rem; top:50%; transform:translateY(-50%); width:1.75rem; height:1.75rem; display:flex; align-items:center; justify-content:center; border-radius:50%; background:var(--line); color:var(--ink-soft); font-size:1.4rem; font-weight:400; line-height:1; transition:background .25s ease, color .25s ease; }
+    .article-content .faq-item[open] > .faq-question { color:var(--accent); border-bottom:1px solid var(--line); }
+    .article-content .faq-item[open] > .faq-question::after { content:"×"; background:var(--accent); color:var(--paper); font-size:1.5rem; }
+    .article-content .faq-question:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+    .article-content .faq-answer { padding:1.1rem 1.5rem 1.4rem; color:var(--ink-soft); font-size:.95rem; line-height:1.7; animation:faqFade .25s ease; }
+    @keyframes faqFade { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+    @media (max-width:640px) { .article-content .faq-question { padding:1rem 3.25rem 1rem 1.25rem; font-size:.95rem; } .article-content .faq-answer { padding:1rem 1.25rem 1.2rem; font-size:.9rem; } }
+    @media (prefers-reduced-motion:reduce) { .article-content .faq-answer { animation:none; } }
+    /* Articles similaires */
+    .related-card img { transition: transform .3s ease; }
+    .related-card:hover img { transform: scale(1.05); }
+    .related-card:hover .related-title { color: var(--accent); }
+    /* Colonne de droite (ordinateur uniquement) : les blocs déplacés en JS s'adaptent
+       à une colonne étroite au lieu de leur mise en page d'origine (pensée pour la pleine largeur). */
+    #article-aside #buy-cta-block { flex-direction: column; align-items: flex-start; }
+    #article-aside #related-articles-container .grid { grid-template-columns: 1fr; gap: 1.25rem; }
+    #article-aside .related-card .h-32 { height: 10rem; }
+    /* Animations */
+    .reveal { opacity:0; transform:translateY(18px); transition:opacity .55s cubic-bezier(.22,1,.36,1), transform .55s cubic-bezier(.22,1,.36,1); }
+    .reveal.is-visible { opacity:1; transform:none; }
+    .reveal:nth-child(2) { transition-delay:.08s; }
+    .reveal:nth-child(3) { transition-delay:.16s; }
+    header { transition: box-shadow .3s ease; }
+    .header-scrolled { box-shadow: 0 2px 20px rgba(0,0,0,.07) !important; }
+    #article-content { animation: pageFadeIn .45s ease both; }
+    @keyframes pageFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, header, #article-content { transition:none !important; animation:none !important; opacity:1 !important; transform:none !important; }
+    }
+    /* Image de couverture plein cadre (sort du conteneur étroit) */
+    .full-bleed { width:100vw; position:relative; left:50%; right:50%; margin-left:-50vw; margin-right:-50vw; }
+    /* Barre de progression de lecture */
+    #reading-progress { position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:60; transition:width .1s linear; }
+    /* Boutons de partage flottants */
+    #share-float { position:fixed; right:20px; bottom:24px; z-index:40; display:flex; flex-direction:column; gap:10px; }
+    .share-btn { width:44px; height:44px; border-radius:9999px; background:var(--paper-raised); border:1px solid var(--line); box-shadow:0 4px 16px rgba(0,0,0,.08); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); transition:color .15s, transform .15s, box-shadow .15s; }
+    .share-btn:hover { color:var(--accent); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.12); }
+    #share-toast { position:fixed; right:20px; bottom:80px; z-index:41; background:var(--ink); color:var(--paper); font-size:.75rem; font-weight:500; padding:.5rem .8rem; border-radius:.6rem; opacity:0; transform:translateY(4px); transition:opacity .2s, transform .2s; pointer-events:none; }
+    #share-toast.show { opacity:1; transform:translateY(0); }
+    /* Lettrine sur le premier bloc de texte du corps de l'article */
+    .article-content .drop-cap::first-letter {
+      float:left; font-family:var(--font-display); font-size:3.6rem; line-height:.82;
+      font-weight:700; color:var(--accent); padding:.25rem .5rem 0 0;
+    }
+    @media (max-width: 640px) {
+      #share-float { right:12px; bottom:16px; }
+      .share-btn { width:40px; height:40px; }
+    }
+  </style>
+  <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);}</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-39RE8T7LE5"></script>
+  <script>gtag('js', new Date()); gtag('config', 'G-39RE8T7LE5');</script>
+</head>
+<body class="font-sans antialiased">
+  <div id="ambient"></div>
+
+  <!-- Barre de progression de lecture -->
+  <div id="reading-progress"></div>
+
+  <!-- Partage flottant -->
+  <div id="share-float">
+    <button class="share-btn" title="Partager sur LinkedIn" onclick="shareLinkedIn()">
+      <svg class="w-4.5 h-4.5" style="width:18px;height:18px" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+    </button>
+    <button class="share-btn" title="Copier le lien" onclick="copyArticleLink()">
+      <svg class="w-4.5 h-4.5" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+    </button>
+  </div>
+  <div id="share-toast">Lien copié !</div>
+
+  <!-- HEADER -->
+  <header id="site-header" class="nav-centered sticky top-0 z-50 backdrop-blur" style="background:color-mix(in srgb, var(--paper) 94%, transparent)">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 nc-top">
+      <span id="nav-clock" class="nav-clock nc-clock" title="Le site suit votre heure"><span class="nav-time">--:--</span><span class="nav-band"></span></span>
+      <a href="/" class="nc-logo" aria-label="Les Heures Flâneuses — Accueil">
+        <img src="/images/logo/logo-256.png" alt="" width="64" height="64" class="nc-logo-img" />
+        <span class="nc-wordmark font-display">Les Heures <em>Flâneuses</em></span>
+      </a>
+      <a href="/#newsletter" class="nc-sub hidden md:inline-flex">S'abonner</a>
+      <button id="menu-btn" aria-label="Menu" class="nc-burger md:hidden" style="color:var(--ink)">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <nav aria-label="Navigation principale" class="nc-links hidden md:flex">
+      <a href="categorie.html?cat=lifestyle" class="ink-link nav-link" data-cat="lifestyle">Lifestyle</a>
+      <a href="categorie.html?cat=sport"  class="ink-link nav-link" data-cat="sport">Tech</a>
+    </nav>
+
+    <div class="nav-horizon" aria-hidden="true"><span class="nav-horizon-elapsed"></span><span class="nav-sun"></span></div>
+
+    <div id="nav-panel" class="nav-panel" aria-hidden="true"></div>
+
+    <div id="mobile-menu" class="hidden md:hidden px-4 py-2 text-sm font-medium" style="color:var(--ink-soft)">
+      <a href="categorie.html?cat=lifestyle" class="block">Lifestyle</a>
+      <a href="categorie.html?cat=sport"  class="block">Tech</a>
+      <a href="/#newsletter" class="block">S'abonner</a>
+    </div>
+  </header>
+
+  <!-- CONTENU ARTICLE -->
+  <main id="article-main" class="max-w-3xl lg:max-w-6xl mx-auto px-4 sm:px-6 py-14">
+
+    <!-- SKELETON (visible pendant le chargement) -->
+    <div id="skeleton">
+      <div class="skeleton h-5 w-32 mb-6"></div>
+      <div class="skeleton h-10 w-full mb-3"></div>
+      <div class="skeleton h-10 w-3/4 mb-6"></div>
+      <div class="skeleton h-5 w-48 mb-10"></div>
+      <div class="skeleton w-full h-72 mb-10"></div>
+      <div class="space-y-3">
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-5/6"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-4/5"></div>
+      </div>
+    </div>
+
+    <!-- Image de couverture — hors grille pour rester plein cadre et laisser la colonne de
+         droite démarrer au niveau du titre, pas du haut de la photo. -->
+    <div id="article-cover" class="hidden"></div>
+
+    <!-- Sur ordinateur (≥1024px) : contenu à gauche, encart achat/rédacteur/articles
+         similaires basculés à droite en JS (voir layoutSidebar). Mobile/tablette : inchangés,
+         ces blocs restent à leur place d'origine dans #article-content. -->
+    <div id="article-layout" class="lg:grid lg:grid-cols-[1fr_340px] lg:gap-x-16 lg:items-start">
+      <!-- CONTENU (injecté par JS) -->
+      <div id="article-content" class="hidden lg:max-w-none"></div>
+      <aside id="article-aside" class="hidden lg:block space-y-8"></aside>
+    </div>
+
+    <!-- ERREUR -->
+    <div id="article-error" class="hidden text-center py-20">
+      <p class="text-4xl mb-4">😕</p>
+      <h1 class="font-display text-2xl font-medium mb-2" style="color:var(--ink)">Article introuvable</h1>
+      <p class="mb-6" style="color:var(--ink-soft)">Cet article n'existe pas ou a été supprimé.</p>
+      <a href="/" class="inline-flex items-center px-5 py-2.5 text-sm font-medium transition-colors" style="background:var(--ink);color:var(--paper)">← Retour à l'accueil</a>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer style="background:#1D1411; color:#C2AB9C" class="mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-14 footer-trio" style="border-bottom:1px solid rgba(246,234,223,.1)">
+      <p class="text-sm leading-relaxed max-w-xs">Un blog indépendant, écrit par Marius Masoch. Des tests et des avis sur le lifestyle et la tech, après usage réel.</p>
+      <a href="/" class="ft-brand font-display flex flex-col items-center gap-3 leading-none text-center" style="color:#F6EADF" aria-label="Les Heures Flâneuses, accueil">
+        <img src="/images/logo/logo-256.png" alt="" width="104" height="104" style="height:104px;width:104px" />
+        <span class="flex flex-col items-center leading-none">
+          <span class="text-xl md:text-2xl">Les Heures</span>
+          <span class="text-5xl md:text-6xl italic mt-1" style="color:#F58B2B">Flâneuses</span>
+        </span>
+      </a>
+      <nav aria-label="Pied de page">
+        <ul class="font-display text-xl md:text-2xl flex flex-wrap md:justify-end gap-x-6 gap-y-2" style="color:#F6EADF">
+          <li><a href="categorie.html?cat=lifestyle" class="ink-link">Lifestyle</a></li>
+          <li><a href="categorie.html?cat=sport" class="ink-link">Tech</a></li>
+        </ul>
+        <ul class="mt-6 text-sm flex flex-wrap md:justify-end gap-x-5 gap-y-2">
+          <li><a href="ecrire.html" class="ink-link">Écrire pour nous</a></li>
+          <li><a href="contact.html" class="ink-link">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs opacity-60">© 2026 Les Heures Flâneuses</div>
+
+  </footer>
+
+  <script>
+    const SUPABASE_URL  = 'https://yrgylnmhqcimwgmjponj.supabase.co';
+    const SUPABASE_ANON = 'sb_publishable__SdwJpIWNVfPfVNX7eFc-w_mQA8av6H';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Cible de navigation d'un article : sa sous-rubrique si elle existe, sinon sa rubrique (jamais les anciennes pages mode/hotels)
+    const CAT_GROUP = { mode: 'lifestyle', hotels: 'lifestyle', sport: 'sport' };
+    const GROUP_LABEL = { lifestyle: 'Lifestyle', sport: 'Tech' };
+    function catTarget(a) {
+      const g = CAT_GROUP[a.categorie] || a.categorie;
+      const subs = (window.SUBCATS && window.SUBCATS[g]) ? window.SUBCATS[g].subs : [];
+      const sub = subs.find(x => x.id === a.sous_categorie);
+      return {
+        groupHref: `categorie.html?cat=${g}`,
+        href: sub ? `categorie.html?cat=${g}&sub=${sub.id}` : `categorie.html?cat=${g}`,
+        label: sub ? sub.label : (GROUP_LABEL[g] || '')
+      };
+    }
+
+    const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+    async function loadArticle() {
+      const params = new URLSearchParams(window.location.search);
+      const slug   = params.get('slug');
+      if (!slug) { showError(); return; }
+
+      const OLD_SLUGS = {
+        'tissot-prc-100-solar-quand-lhorlogerie-suisse-sempare-de-len': 'avis-tissot-prc-100-solar-test-de-la-montre-solaire-suisse',
+        'clozen-lalliance-du-physique-et-du-digital-pour-vaincre-la-d': 'avis-clozen-test-du-boitier-anti-distraction',
+        'pin-traveler-lapplication-ultime-pour-cartographier-et-docum': 'avis-pin-traveler-test-de-lappli-de-voyage',
+        'futuroscope-plongee-technologique-et-sensorielle-au-cur-de-l': 'avis-futuroscope-notre-experience-et-nos-conseils-de-visite',
+        'garmin-forerunner-170-la-montre-running-qui-democratise-lamo': 'avis-garmin-forerunner-170-test-de-lamoled-a-moins-de-300',
+        'City-trip-de-72h-3-destinations-incontournables': 'city-trip-en-europe-3-destinations-pour-un-week-end-de-72h',
+      };
+      if (OLD_SLUGS[slug]) { window.location.replace(`article.html?slug=${OLD_SLUGS[slug]}`); return; }
+
+      const cacheKey = `tf_article_${slug}`;
+
+      // 1. Affichage instantané depuis le cache si disponible
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey));
+        if (cached && Date.now() - cached.ts < CACHE_TTL) {
+          render(cached.data);
+          // Rafraîchissement silencieux en arrière-plan
+          fetchAndCache(slug, cacheKey, true);
+          return;
+        }
+      } catch(e) {}
+
+      // 2. Pas de cache : fetch Supabase + affichage
+      const article = await fetchAndCache(slug, cacheKey, false);
+      if (!article) showError();
+    }
+
+    async function fetchAndCache(slug, cacheKey, silent) {
+      const { data: rows, error } = await db
+        .from('articles')
+        .select('*, redacteurs(prenom, nom, photo_url, bio, specialite, linkedin_url)')
+        .eq('slug', slug)
+        .eq('statut', 'publié')
+        .limit(1);
+
+      if (error || !rows || !rows.length) return null;
+
+      const article = rows[0];
+      try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: article })); } catch(e) {}
+
+      if (!silent) render(article);
+      return article;
+    }
+
+    function disclosureHtml(a) {
+      const who = a.partenaire ? `<strong>${a.partenaire}</strong>` : 'la marque';
+      const t = {
+        offert:  { label:'Produit offert',      text:`${who} nous a offert ce produit pour réaliser ce test. Il s'agit d'une dotation : aucune rémunération n'a été versée en contrepartie, et cet avis reste libre et indépendant.` },
+        pret:    { label:'Produit prêté',       text:`${who} nous a prêté ce produit pour réaliser ce test. Aucune rémunération n'a été versée en contrepartie, et cet avis reste libre et indépendant.` },
+        remunere:{ label:'Contenu sponsorisé',  text:`Cet article a fait l'objet d'une rémunération de la part de ${who}. Notre avis reste notre opinion sincère.` },
+      }[a.type_partenariat];
+      return t ? `<aside class="disclosure" role="note" aria-label="Mention de partenariat"><p class="disclosure-label">${t.label}</p><p class="disclosure-text">${t.text}</p></aside>` : '';
+    }
+
+    function render(a) {
+      const style = window.cardTag(a);
+      const date  = new Date(a.date_creation).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+      const mins  = a.temps_lecture ? `${a.temps_lecture} min de lecture` : '';
+
+      // Mettre à jour le <title> et la meta description
+      document.title = `${a.titre} — Les Heures Flâneuses`;
+      document.getElementById('meta-desc').setAttribute('content', a.extrait || '');
+
+      // Canonical
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+      canonical.href = `https://lesheuresflaneuses.fr/article.html?slug=${a.slug}`;
+
+      // Open Graph
+      const ogMetas = {
+        'og:type':        'article',
+        'og:title':       `${a.titre} — Les Heures Flâneuses`,
+        'og:description': a.extrait || '',
+        'og:url':         `https://lesheuresflaneuses.fr/article.html?slug=${a.slug}`,
+        'og:image':       a.image_url || 'https://lesheuresflaneuses.fr/og-cover.jpg',
+        'article:published_time': a.date_creation,
+        'article:modified_time':  a.date_modification || a.date_creation,
+        'article:section':        window.cardTag(a).label,
+      };
+      Object.entries(ogMetas).forEach(([prop, content]) => {
+        let m = document.querySelector(`meta[property="${prop}"]`);
+        if (!m) { m = document.createElement('meta'); m.setAttribute('property', prop); document.head.appendChild(m); }
+        m.content = content;
+      });
+
+      // Twitter Card
+      const twitterMetas = {
+        'twitter:title':       `${a.titre} — Les Heures Flâneuses`,
+        'twitter:description': a.extrait || '',
+        'twitter:image':       a.image_url || 'https://lesheuresflaneuses.fr/og-cover.jpg',
+      };
+      Object.entries(twitterMetas).forEach(([name, content]) => {
+        let m = document.querySelector(`meta[name="${name}"]`);
+        if (!m) { m = document.createElement('meta'); m.setAttribute('name', name); document.head.appendChild(m); }
+        m.content = content;
+      });
+
+      // Schema.org JSON-LD
+      const author = a.redacteurs ? { '@type': 'Person', name: `${a.redacteurs.prenom} ${a.redacteurs.nom}` } : { '@type': 'Organization', name: 'Les Heures Flâneuses' };
+      const schema = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: a.titre,
+        description: a.extrait || '',
+        image: a.image_url || 'https://lesheuresflaneuses.fr/og-cover.jpg',
+        datePublished: a.date_creation,
+        dateModified: a.date_modification || a.date_creation,
+        author,
+        publisher: { '@type': 'Organization', name: 'Les Heures Flâneuses', logo: { '@type': 'ImageObject', url: 'https://lesheuresflaneuses.fr/images/logo/logo-512.png' } },
+        url: `https://lesheuresflaneuses.fr/article.html?slug=${a.slug}`,
+        mainEntityOfPage: `https://lesheuresflaneuses.fr/article.html?slug=${a.slug}`,
+      };
+      let ld = document.getElementById('schema-ld');
+      if (!ld) { ld = document.createElement('script'); ld.id = 'schema-ld'; ld.type = 'application/ld+json'; document.head.appendChild(ld); }
+      ld.textContent = JSON.stringify(schema);
+
+      // Image de couverture — plein cadre, placée hors de la grille (voir #article-cover)
+      // pour que la colonne de droite démarre au niveau du titre, pas du haut de la photo.
+      const coverEl = document.getElementById('article-cover');
+      if (a.image_url) {
+        coverEl.innerHTML = `<div class="full-bleed h-64 sm:h-96 md:h-[480px] overflow-hidden mb-10" style="background:var(--paper-raised)">
+             <img src="${a.image_url}" alt="${a.titre}" class="w-full h-full object-cover" />
+           </div>`;
+        coverEl.classList.remove('hidden');
+      } else {
+        coverEl.innerHTML = '';
+        coverEl.classList.add('hidden');
+      }
+
+      // Rédacteur
+      let redacteurHTML = '';
+      if (a.redacteurs) {
+        const r = a.redacteurs;
+        const avatar = r.photo_url
+          ? `<div class="w-16 h-16 rounded-2xl overflow-hidden shrink-0" style="border:1px solid var(--line)"><img src="${r.photo_url}" alt="${r.prenom} ${r.nom}" class="w-full h-full object-cover" /></div>`
+          : `<div class="w-16 h-16 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0 text-brand-600 font-bold text-xl">${r.prenom[0]}${r.nom[0]}</div>`;
+        redacteurHTML = `
+          <div id="author-block" class="mt-10 pt-8" style="border-top:1px solid var(--line)">
+            <p class="text-xs font-semibold uppercase tracking-widest mb-4" style="color:var(--ink-soft)">À propos de l'auteur</p>
+            <div class="flex items-center gap-5 p-5" style="background:var(--paper-raised); border:1px solid var(--line)">
+              ${avatar}
+              <div class="min-w-0">
+                <p class="font-display font-medium text-base" style="color:var(--ink)">${r.prenom} ${r.nom}</p>
+                <p class="text-xs font-medium mt-0.5 mb-1" style="color:var(--accent)">${r.specialite || 'Rédacteur Les Heures Flâneuses'}</p>
+                ${r.linkedin_url ? `<a href="${r.linkedin_url}" target="_blank" rel="noopener noreferrer" class="ink-link inline-flex items-center gap-1 text-xs mb-1" style="color:var(--ink-soft)"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>LinkedIn</a>` : ''}
+                ${r.bio ? `<p class="text-sm leading-relaxed" style="color:var(--ink-soft)">${r.bio}</p>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }
+
+      document.getElementById('article-content').innerHTML = `
+        <!-- Badge catégorie -->
+        <div class="mb-6">
+          <a href="${catTarget(a).href}" class="inline-flex items-center px-3 py-1 text-xs font-semibold" style="color:${style.text};background:${style.bg}">${style.label}</a>
+        </div>
+
+        <!-- Titre -->
+        <h1 class="font-display text-3xl sm:text-4xl font-medium leading-tight mb-4" style="color:var(--ink)">${a.titre}</h1>
+
+        <!-- Métadonnées -->
+        <div class="flex items-center gap-4 text-sm mb-8 flex-wrap" style="color:var(--ink-soft)">
+          <span>${date}</span>
+          ${mins ? `<span class="meta-sep" aria-hidden="true">·</span><span>${mins}</span>` : ''}
+          ${a.redacteurs ? `
+          <span class="meta-sep" aria-hidden="true">·</span>
+          <div class="flex items-center gap-2">
+            ${a.redacteurs.photo_url
+              ? `<img src="${a.redacteurs.photo_url}" alt="${a.redacteurs.prenom} ${a.redacteurs.nom}" class="w-6 h-6 rounded-full object-cover" style="border:1px solid var(--line)" />`
+              : `<div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0" style="background:var(--paper-raised);color:var(--accent)">${a.redacteurs.prenom[0]}${a.redacteurs.nom[0]}</div>`
+            }
+            <span>par <strong style="color:var(--ink)">${a.redacteurs.prenom} ${a.redacteurs.nom}</strong></span>
+          </div>` : ''}
+        </div>
+
+        <!-- Mention légale (produit offert / prêté / rémunéré) -->
+        ${disclosureHtml(a)}
+
+        <!-- Extrait chapô -->
+        ${a.extrait ? `<p class="font-display italic text-lg leading-relaxed mb-8 pb-8" style="color:var(--ink-soft); border-bottom:1px dashed var(--line)">${a.extrait}</p>` : ''}
+
+        <!-- Corps de l'article -->
+        <div class="article-content">${a.contenu || ''}</div>
+
+        <!-- Encart lien d'achat -->
+        <span id="buy-cta-anchor" class="hidden"></span>
+        ${a.lien_achat ? `
+        <div id="buy-cta-block" class="mt-10 flex items-center justify-between gap-4 p-6" style="background:var(--paper-raised); border:1px solid var(--line)">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:var(--ink-soft)">Où acheter</p>
+            <p class="text-sm leading-relaxed" style="color:var(--ink-soft)">Retrouvez ce produit en ligne au meilleur prix.</p>
+          </div>
+          <a href="${a.lien_achat}" target="_blank" rel="noopener noreferrer sponsored"
+            class="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors"
+            style="background:var(--ink); color:var(--paper)">
+            Voir le produit
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>` : ''}
+
+        <!-- Carte Google Maps -->
+        ${a.localisation ? `
+        <div class="mt-10 pt-8" style="border-top:1px solid var(--line)">
+          <p class="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-1.5" style="color:var(--ink-soft)">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Localisation
+          </p>
+          <p class="text-sm mb-3 font-medium" style="color:var(--ink-soft)">${a.localisation}</p>
+          <div class="overflow-hidden" style="height:320px; border:1px solid var(--line)">
+            <iframe
+              src="https://maps.google.com/maps?q=${encodeURIComponent(a.localisation)}&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Carte — ${a.localisation}">
+            </iframe>
+          </div>
+        </div>` : ''}
+
+        <!-- Rédacteur -->
+        <span id="author-anchor" class="hidden"></span>
+        ${redacteurHTML}
+
+        <!-- Articles similaires -->
+        <span id="related-anchor" class="hidden"></span>
+        <div id="related-articles-container" class="mt-10 pt-8" style="border-top:1px solid var(--line)"></div>
+
+        <!-- Navigation retour -->
+        <div class="mt-12 pt-8" style="border-top:1px solid var(--line)">
+          <a href="${catTarget(a).href}" class="ink-link inline-flex items-center gap-2 text-sm font-medium" style="color:var(--accent)">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Retour à ${catTarget(a).label}
+          </a>
+        </div>
+      `;
+
+      // Afficher le contenu, masquer le skeleton
+      document.getElementById('skeleton').classList.add('hidden');
+      document.getElementById('article-content').classList.remove('hidden');
+
+      // SEO & maillage
+      upgradeFaqAccordion();
+      upgradeSpecLists();
+      upgradeVerdictBlocks();
+      generateFaqSchema();
+      loadRelatedArticles(a);
+      stripEmptyBlocks();
+      sanitizeArticleBodyStyles();
+      applyFakeHeadings();
+      buildToc();
+      if (window.markZoomable) window.markZoomable();
+      applyDropCap();
+      layoutSidebar();
+    }
+
+    // Sur ordinateur (≥1024px) : bascule rédacteur / encart achat / articles similaires
+    // dans la colonne de droite. En dessous de ce seuil, tout reste à sa place d'origine
+    // (chaque bloc garde une ancre juste avant lui pour pouvoir y revenir).
+    const desktopMQ = window.matchMedia('(min-width: 1024px)');
+    function layoutSidebar() {
+      const aside = document.getElementById('article-aside');
+      if (!aside) return;
+      const isDesktop = desktopMQ.matches;
+      [
+        { el: document.getElementById('author-block'),               anchor: document.getElementById('author-anchor') },
+        { el: document.getElementById('buy-cta-block'),               anchor: document.getElementById('buy-cta-anchor') },
+        { el: document.getElementById('related-articles-container'), anchor: document.getElementById('related-anchor') },
+      ].forEach(({ el, anchor }) => {
+        if (!el || !anchor) return;
+        if (isDesktop) {
+          if (el.parentElement !== aside) aside.appendChild(el);
+        } else if (el.parentElement === aside) {
+          anchor.after(el);
+        }
+      });
+    }
+    desktopMQ.addEventListener('change', layoutSidebar);
+
+    // Retire les paragraphes/div vides (restes d'appuis sur Entrée dans l'éditeur) qui créent
+    // de gros sauts de ligne blancs entre les sections, en laissant intacts les blocs spéciaux
+    // (verdict, FAQ, notation, encadrés).
+    function stripEmptyBlocks() {
+      const body = document.querySelector('.article-content');
+      if (!body) return;
+      body.querySelectorAll('p, div').forEach(el => {
+        if (el.hasAttribute('contenteditable')) return;
+        if (el.closest('[contenteditable="false"]')) return;
+        if (el.querySelector('img, iframe, hr')) return;
+        const text = el.textContent.replace(/ /g, ' ').trim();
+        if (text === '') el.remove();
+      });
+    }
+
+    // Neutralise les styles parasites (line-height, font-family) que certains textes collés
+    // depuis d'autres sites/outils IA embarquent en dur, et qui écrasent le style du site.
+    function sanitizeArticleBodyStyles() {
+      const body = document.querySelector('.article-content');
+      if (!body) return;
+      body.querySelectorAll('[style]').forEach(el => {
+        el.style.removeProperty('line-height');
+        el.style.removeProperty('font-family');
+        Array.from(el.style).forEach(prop => {
+          if (prop.startsWith('--tw-')) el.style.removeProperty(prop);
+        });
+      });
+    }
+
+    // Repère les blocs qui ne sont que du texte en gras (faux titres) pour leur donner
+    // un vrai style de sous-titre, puisque cet éditeur ne pose pas toujours de balise Hx.
+    function buildToc() {
+      const body = document.querySelector('.article-content');
+      if (!body || body.querySelector('.toc')) return;
+      const heads = Array.from(body.querySelectorAll('h2')).filter(h => h.textContent.trim());
+      if (heads.length < 3) return;
+      const used = new Set();
+      const items = heads.map(h => {
+        let id = h.textContent.trim().toLowerCase().replace(/œ/g, 'oe').normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50).replace(/-+$/, '') || 'section';
+        let n = 2, base = id;
+        while (used.has(id)) id = `${base}-${n++}`;
+        used.add(id);
+        h.id = id;
+        return `<li><a href="#${id}">${h.textContent.trim()}</a></li>`;
+      });
+      const toc = document.createElement('details');
+      toc.className = 'toc';
+      toc.open = true;
+      toc.innerHTML = `<summary>Sommaire</summary><ol>${items.join('')}</ol>`;
+      heads[0].before(toc);
+    }
+
+    function applyFakeHeadings() {
+      const body = document.querySelector('.article-content');
+      if (!body) return;
+      const SKIP_TAGS = new Set(['H2','H3','H4','BLOCKQUOTE','UL','OL','HR','IMG','IFRAME']);
+      for (const child of body.children) {
+        if (SKIP_TAGS.has(child.tagName)) continue;
+        if (child.hasAttribute('contenteditable')) continue; // blocs spéciaux (verdict, FAQ, notation, encadrés)
+        if (child.tagName !== 'DIV' && child.tagName !== 'P') continue;
+        const text = child.textContent.trim();
+        if (!text || text.length > 100) continue;
+        const bold = child.querySelector('b, strong');
+        if (bold && bold.textContent.trim() === text) {
+          child.classList.add('fake-heading');
+        }
+      }
+    }
+
+    // Lettrine sur le premier bloc de texte réel du corps (le contenu peut mélanger <div>/<p>)
+    function applyDropCap() {
+      const body = document.querySelector('.article-content');
+      if (!body) return;
+      const SKIP_TAGS = new Set(['H2','H3','H4','BLOCKQUOTE','UL','OL','HR','IMG','IFRAME']);
+      for (const child of body.children) {
+        if (SKIP_TAGS.has(child.tagName)) continue;
+        if (child.hasAttribute('contenteditable')) continue; // blocs spéciaux
+        if (child.querySelector('img, iframe')) continue;
+        const text = child.textContent.trim();
+        if (text.length < 20) continue;
+        // Ignore les faux titres composés uniquement de texte en gras (pas de vraie balise Hx dans cet éditeur)
+        const bold = child.querySelector('b, strong');
+        if (bold && bold.textContent.trim() === text) continue;
+        child.classList.add('drop-cap');
+        break;
+      }
+    }
+
+    async function loadRelatedArticles(article) {
+      const container = document.getElementById('related-articles-container');
+      if (!container || !article || !article.categorie) return;
+      const currentSlug = article.slug;
+      const g = window.groupOfCat(article.categorie);
+      const cats = g ? window.SUBCATS[g].cats : [article.categorie];
+
+      const { data: rows } = await db
+        .from('articles')
+        .select('titre, slug, image_url, date_creation, sous_categorie')
+        .in('categorie', cats)
+        .eq('statut', 'publié')
+        .neq('slug', currentSlug)
+        .order('date_creation', { ascending: false })
+        .limit(12);
+      const data = (rows || [])
+        .sort((x, y) => (y.sous_categorie === article.sous_categorie) - (x.sous_categorie === article.sous_categorie))
+        .slice(0, 3);
+
+      if (!data || !data.length) return;
+
+      container.innerHTML = `
+        <p class="reveal text-xs font-semibold uppercase tracking-widest mb-5" style="color:var(--ink-soft)">Dans la même rubrique</p>
+        <div class="grid sm:grid-cols-3 gap-5">
+          ${data.map((a, i) => `
+            <a href="article.html?slug=${a.slug}" class="related-card reveal group block">
+              <div class="w-full h-32 overflow-hidden mb-3" style="background:var(--paper-raised); border:1px solid var(--line)">
+                ${a.image_url
+                  ? `<img src="${a.image_url}" alt="${a.titre}" class="w-full h-full object-cover" />`
+                  : ''}
+              </div>
+              <p class="related-title text-sm font-semibold leading-snug transition-colors line-clamp-2" style="color:var(--ink)">${a.titre}</p>
+              <p class="text-xs mt-1" style="color:var(--ink-soft)">${new Date(a.date_creation).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}</p>
+            </a>
+          `).join('')}
+        </div>`;
+      window.revealAll && window.revealAll();
+    }
+
+    // "Fiche technique" / "Infos pratiques" saisies en liste « Label : valeur » → tableau de caractéristiques
+    function upgradeSpecLists() {
+      const body = document.querySelector('.article-content');
+      if (!body) return;
+      body.querySelectorAll('h2').forEach(h => {
+        if (!/fiche technique|infos pratiques|caract[ée]ristiques/i.test(h.textContent)) return;
+        const ul = h.nextElementSibling;
+        if (!ul || ul.tagName !== 'UL' || ul.children.length < 3) return;
+        const rows = Array.from(ul.children).map(li => {
+          const s = li.firstElementChild;
+          if (!s || !/^(STRONG|B)$/.test(s.tagName)) return null;
+          const copy = li.cloneNode(true);
+          copy.firstElementChild.remove();
+          return { label: s.textContent.replace(/\s*:\s*$/, '').trim(), value: copy.innerHTML.replace(/^[\s ]*:?[\s ]*/, '').trim() };
+        });
+        if (rows.some(r => !r || !r.label || !r.value)) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'spec-table';
+        wrap.setAttribute('contenteditable', 'false');
+        wrap.innerHTML = `<table><tbody>${rows.map(r => `<tr><th>${r.label}</th><td>${r.value}</td></tr>`).join('')}</tbody></table>`;
+        ul.replaceWith(wrap);
+      });
+    }
+
+    // Ancien bloc "Verdict rapide" (styles en dur, illisible en thème sombre) → bloc note + points forts/faibles
+    function upgradeVerdictBlocks() {
+      document.querySelectorAll('#article-content .verdict-block').forEach(block => {
+        const head = block.children[0], grid = block.children[1];
+        if (!head || !grid) return;
+        const m = head.textContent.match(/(\d+(?:[.,]\d+)?)/);
+        if (!m) return;
+        const cols = Array.from(grid.children).map(col => {
+          const ps = col.querySelectorAll('p');
+          const items = (ps[1] ? ps[1].innerHTML : '').split(/<br\s*\/?>/i)
+            .map(s => s.replace(/<[^>]+>/g, '').replace(/^[\s ]*[•\-][\s ]*/, '').trim()).filter(Boolean);
+          return { title: ps[0] ? ps[0].textContent.replace(/^[✓✗✔✘\s]+/, '').trim() : '', items };
+        });
+        if (cols.length < 2 || !cols[0].items.length || !cols[1].items.length) return;
+        const list = c => `<ul>${c.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+        const el = document.createElement('div');
+        el.className = 'score-block';
+        el.setAttribute('contenteditable', 'false');
+        el.innerHTML = `<div class="score-head"><div class="score-note">${m[1].replace('.', ',')}<span>/10</span></div><div><div class="score-title">Verdict rapide</div><div class="score-sub">Note Les Heures Flâneuses</div></div></div>`
+          + `<div class="pros-cons"><div class="pc-col pc-pros"><p class="pc-title">${cols[0].title || 'Points forts'}</p>${list(cols[0])}</div><div class="pc-col pc-cons"><p class="pc-title">${cols[1].title || 'Points faibles'}</p>${list(cols[1])}</div></div>`;
+        block.replaceWith(el);
+      });
+    }
+
+    function upgradeFaqAccordion() {
+      document.querySelectorAll('#article-content .faq-item').forEach(item => {
+        if (item.tagName === 'DETAILS') return;
+        const q = item.querySelector('.faq-question');
+        const a = item.querySelector('.faq-answer');
+        if (!q || !a) return;
+        const details = document.createElement('details');
+        details.className = 'faq-item';
+        const summary = document.createElement('summary');
+        summary.className = 'faq-question';
+        summary.innerHTML = q.innerHTML;
+        const answer = document.createElement('div');
+        answer.className = 'faq-answer';
+        answer.innerHTML = a.innerHTML;
+        details.append(summary, answer);
+        item.replaceWith(details);
+      });
+    }
+
+    function generateFaqSchema() {
+      const items = document.querySelectorAll('#article-content .faq-item');
+      if (!items.length) return;
+
+      const mainEntity = [];
+      items.forEach(item => {
+        const q = item.querySelector('.faq-question');
+        const a = item.querySelector('.faq-answer');
+        if (q && a) {
+          mainEntity.push({
+            '@type': 'Question',
+            name: q.textContent.trim(),
+            acceptedAnswer: { '@type': 'Answer', text: a.textContent.trim() }
+          });
+        }
+      });
+
+      if (!mainEntity.length) return;
+
+      let ld = document.getElementById('schema-faq-ld');
+      if (!ld) { ld = document.createElement('script'); ld.id = 'schema-faq-ld'; ld.type = 'application/ld+json'; document.head.appendChild(ld); }
+      ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity });
+    }
+
+    function showError() {
+      document.getElementById('skeleton').classList.add('hidden');
+      document.getElementById('article-error').classList.remove('hidden');
+    }
+
+    loadArticle();
+
+    // --- Barre de progression de lecture ---
+    window.addEventListener('scroll', () => {
+      const el = document.getElementById('article-content');
+      const bar = document.getElementById('reading-progress');
+      if (!el || el.classList.contains('hidden')) { bar.style.width = '0%'; return; }
+      const rect = el.getBoundingClientRect();
+      const total = el.offsetHeight - window.innerHeight;
+      const scrolled = -rect.top;
+      const pct = total > 0 ? Math.min(100, Math.max(0, (scrolled / total) * 100)) : 0;
+      bar.style.width = pct + '%';
+    }, { passive: true });
+
+    // --- Partage ---
+    function shareLinkedIn() {
+      const url = encodeURIComponent(window.location.href);
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'noopener,noreferrer');
+    }
+    async function copyArticleLink() {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+      } catch {
+        const input = document.createElement('input');
+        input.value = window.location.href;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+      }
+      const toast = document.getElementById('share-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+  </script>
+  <script src="/animations.js" defer></script>
+  <script>document.getElementById('menu-btn').addEventListener('click',()=>document.getElementById('mobile-menu').classList.toggle('hidden'));</script>
+  <script>
+    // Visionneuse plein écran pour les photos du contenu de l'article (pas la couverture)
+    (function () {
+      const SEL = '.article-content img';
+      let list = [], idx = 0, opener = null, startX = null;
+
+      const box = document.createElement('div');
+      box.id = 'lightbox';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', 'Photo agrandie');
+      box.innerHTML = '<button type="button" class="lb-btn lb-close" aria-label="Fermer">×</button>'
+        + '<button type="button" class="lb-btn lb-nav lb-prev" aria-label="Photo précédente">‹</button>'
+        + '<figure><img alt=""><figcaption></figcaption></figure>'
+        + '<button type="button" class="lb-btn lb-nav lb-next" aria-label="Photo suivante">›</button>';
+      document.body.appendChild(box);
+      const img = box.querySelector('img'), cap = box.querySelector('figcaption');
+
+      function show(i) {
+        idx = (i + list.length) % list.length;
+        const src = list[idx];
+        img.src = src.currentSrc || src.src;
+        img.alt = src.alt || '';
+        const fc = src.closest('figure') && src.closest('figure').querySelector('figcaption');
+        cap.textContent = (fc && fc.textContent.trim()) || src.alt || '';
+        box.classList.toggle('single', list.length < 2);
+      }
+      function open(el) {
+        list = Array.from(document.querySelectorAll(SEL)).filter(i => !i.closest('a') && i.getAttribute('src'));
+        const i = list.indexOf(el);
+        if (i < 0) return;
+        opener = el;
+        show(i);
+        box.classList.add('open');
+        document.documentElement.style.overflow = 'hidden';
+        box.querySelector('.lb-close').focus();
+      }
+      function close() {
+        box.classList.remove('open');
+        document.documentElement.style.overflow = '';
+        if (opener) opener.focus && opener.focus({ preventScroll: true });
+      }
+
+      document.addEventListener('click', e => {
+        const t = e.target.closest(SEL);
+        if (t && !t.closest('a')) open(t);
+      });
+      document.addEventListener('keydown', e => {
+        if (!box.classList.contains('open')) {
+          if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.matches && document.activeElement.matches(SEL)) {
+            e.preventDefault(); open(document.activeElement);
+          }
+          return;
+        }
+        if (e.key === 'Escape') close();
+        else if (e.key === 'ArrowLeft') show(idx - 1);
+        else if (e.key === 'ArrowRight') show(idx + 1);
+      });
+      box.addEventListener('click', e => {
+        if (e.target.closest('.lb-close') || e.target === box) close();
+        else if (e.target.closest('.lb-prev')) show(idx - 1);
+        else if (e.target.closest('.lb-next')) show(idx + 1);
+      });
+      box.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; }, { passive: true });
+      box.addEventListener('touchend', e => {
+        if (startX === null || list.length < 2) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        startX = null;
+        if (Math.abs(dx) > 50) show(idx + (dx < 0 ? 1 : -1));
+      });
+
+      window.markZoomable = function () {
+        document.querySelectorAll(SEL).forEach(i => {
+          if (i.closest('a')) return;
+          i.setAttribute('tabindex', '0');
+          i.setAttribute('role', 'button');
+          i.setAttribute('aria-label', 'Agrandir la photo' + (i.alt ? ' : ' + i.alt : ''));
+        });
+      };
+      window.markZoomable();
+    })();
+  </script>
+</body>
+</html>

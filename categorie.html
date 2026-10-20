@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261013" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=20261013" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20261013" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261013" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Les Heures Flâneuses — Retrouvez tous nos articles par rubrique : lifestyle et tech." />
+  <link rel="canonical" href="https://lesheuresflaneuses.fr/categorie.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <title>Les Heures Flâneuses — Rubrique</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css?v=20261015" />
+  <script src="/time-ambience.js"></script>
+  <script src="/nav.js?v=20261014" defer></script>
+  <style>
+    .article-card img { transition: transform .6s cubic-bezier(.22,1,.36,1); }
+    .article-card:hover img { transform: scale(1.04); }
+    .reveal { opacity:0; transform:translateY(18px); transition:opacity .55s cubic-bezier(.22,1,.36,1), transform .55s cubic-bezier(.22,1,.36,1); }
+    .reveal.is-visible { opacity:1; transform:none; }
+    .reveal:nth-child(2) { transition-delay:.08s; }
+    .reveal:nth-child(3) { transition-delay:.16s; }
+    .reveal:nth-child(4) { transition-delay:.24s; }
+    .reveal:nth-child(5) { transition-delay:.32s; }
+    .reveal:nth-child(6) { transition-delay:.40s; }
+    header { transition: box-shadow .3s ease; }
+    .header-scrolled { box-shadow: 0 2px 20px rgba(0,0,0,.07) !important; }
+    main { animation: pageFadeIn .45s ease both; }
+    @keyframes pageFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .article-card img, header, main { transition:none !important; animation:none !important; opacity:1 !important; transform:none !important; }
+    }
+    .cat-subs { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.6rem; }
+    .cat-subs:empty { display:none; }
+    .cat-chip { display:inline-flex; align-items:baseline; gap:.5rem; padding:.45rem 1rem; border:1px solid var(--line); border-radius:999px; font-size:.78rem; letter-spacing:.06em; color:var(--ink); text-decoration:none; transition:background .25s ease, color .25s ease, border-color .25s ease; }
+    .cat-chip .n { font-size:.7rem; font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+    .cat-chip:hover, .cat-chip:focus-visible { border-color:var(--accent); color:var(--accent); }
+    .cat-chip[aria-current="page"] { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+    .cat-chip[aria-current="page"] .n { color:inherit; opacity:.7; }
+  </style>
+  <script src="/animations.js" defer></script>
+  <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);}</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-39RE8T7LE5"></script>
+  <script>gtag('js', new Date()); gtag('config', 'G-39RE8T7LE5');</script>
+  <script src="/subcats.js?v=20261013"></script>
+  <script>
+    (function() {
+      const cat = new URLSearchParams(location.search).get('cat') || '';
+      // Anciennes rubriques fusionnées dans Lifestyle : redirection immédiate (avant tout rendu)
+      if (cat === 'mode' || cat === 'hotels') { location.replace('categorie.html?cat=lifestyle'); return; }
+      const cats = { mode: 'Mode', sport: 'Tech', hotels: 'Hôtels & Voyages', lifestyle: 'Lifestyle' };
+      let label = cats[cat] || 'Les Heures Flâneuses';
+      let url = 'https://lesheuresflaneuses.fr/categorie.html?cat=' + cat;
+      const subId = new URLSearchParams(location.search).get('sub');
+      const subDef = subId && window.SUBCATS && window.SUBCATS[cat] ? window.SUBCATS[cat].subs.find(function(x){ return x.id === subId; }) : null;
+      if (subDef) { label = label + ' — ' + subDef.label; url += '&sub=' + subId; }
+      const desc = 'Retrouvez tous nos articles ' + label + ' sur Les Heures Flâneuses.';
+      let c = document.querySelector('link[rel="canonical"]');
+      if (!c) { c = document.createElement('link'); c.rel = 'canonical'; document.head.appendChild(c); }
+      c.href = url;
+      [['og:type','website'],['og:title',label+' — Les Heures Flâneuses'],['og:description',desc],['og:url',url]].forEach(function(p){
+        let m = document.querySelector('meta[property="'+p[0]+'"]');
+        if (!m) { m = document.createElement('meta'); m.setAttribute('property',p[0]); document.head.appendChild(m); }
+        m.content = p[1];
+      });
+      [['twitter:title',label+' — Les Heures Flâneuses'],['twitter:description',desc]].forEach(function(p){
+        let m = document.querySelector('meta[name="'+p[0]+'"]');
+        if (!m) { m = document.createElement('meta'); m.setAttribute('name',p[0]); document.head.appendChild(m); }
+        m.content = p[1];
+      });
+    })();
+  </script>
+</head>
+<body class="font-sans antialiased">
+  <div id="ambient"></div>
+
+  <!-- HEADER -->
+  <header id="site-header" class="nav-centered sticky top-0 z-50 backdrop-blur" style="background:color-mix(in srgb, var(--paper) 94%, transparent)">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 nc-top">
+      <span id="nav-clock" class="nav-clock nc-clock" title="Le site suit votre heure"><span class="nav-time">--:--</span><span class="nav-band"></span></span>
+      <a href="/" class="nc-logo" aria-label="Les Heures Flâneuses — Accueil">
+        <img src="/images/logo/logo-256.png" alt="" width="64" height="64" class="nc-logo-img" />
+        <span class="nc-wordmark font-display">Les Heures <em>Flâneuses</em></span>
+      </a>
+      <a href="/#newsletter" class="nc-sub hidden md:inline-flex">S'abonner</a>
+      <button id="menu-btn" aria-label="Menu" class="nc-burger md:hidden" style="color:var(--ink)">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <nav aria-label="Navigation principale" class="nc-links hidden md:flex">
+      <a href="categorie.html?cat=lifestyle" class="ink-link nav-link" data-cat="lifestyle">Lifestyle</a>
+      <a href="categorie.html?cat=sport"  class="ink-link nav-link" data-cat="sport">Tech</a>
+    </nav>
+
+    <div class="nav-horizon" aria-hidden="true"><span class="nav-horizon-elapsed"></span><span class="nav-sun"></span></div>
+
+    <div id="nav-panel" class="nav-panel" aria-hidden="true"></div>
+
+    <div id="mobile-menu" class="hidden md:hidden px-4 py-2 text-sm font-medium" style="color:var(--ink-soft)">
+      <a href="categorie.html?cat=lifestyle" class="block">Lifestyle</a>
+      <a href="categorie.html?cat=sport"  class="block">Tech</a>
+      <a href="/#newsletter" class="block">S'abonner</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-14">
+
+    <!-- Titre rubrique -->
+    <div class="mb-10">
+      <p id="cat-eyebrow" class="mb-3 text-xs uppercase tracking-[0.2em] hidden" style="color:var(--ink-soft)"></p>
+      <h1 id="cat-title" class="font-display italic text-3xl sm:text-4xl font-medium" style="color:var(--ink)"></h1>
+      <p id="cat-desc" class="mt-2 text-base max-w-xl" style="color:var(--ink-soft)"></p>
+      <nav id="cat-subs" class="cat-subs" aria-label="Sous-rubriques"></nav>
+    </div>
+
+    <!-- Grille articles -->
+    <div id="articles-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+      <div class="skeleton h-72"></div>
+      <div class="skeleton h-72"></div>
+      <div class="skeleton h-72"></div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer style="background:#1D1411; color:#C2AB9C" class="mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-14 footer-trio" style="border-bottom:1px solid rgba(246,234,223,.1)">
+      <p class="text-sm leading-relaxed max-w-xs">Un blog indépendant, écrit par Marius Masoch. Des tests et des avis sur le lifestyle et la tech, après usage réel.</p>
+      <a href="/" class="ft-brand font-display flex flex-col items-center gap-3 leading-none text-center" style="color:#F6EADF" aria-label="Les Heures Flâneuses, accueil">
+        <img src="/images/logo/logo-256.png" alt="" width="104" height="104" style="height:104px;width:104px" />
+        <span class="flex flex-col items-center leading-none">
+          <span class="text-xl md:text-2xl">Les Heures</span>
+          <span class="text-5xl md:text-6xl italic mt-1" style="color:#F58B2B">Flâneuses</span>
+        </span>
+      </a>
+      <nav aria-label="Pied de page">
+        <ul class="font-display text-xl md:text-2xl flex flex-wrap md:justify-end gap-x-6 gap-y-2" style="color:#F6EADF">
+          <li><a href="categorie.html?cat=lifestyle" class="ink-link">Lifestyle</a></li>
+          <li><a href="categorie.html?cat=sport" class="ink-link">Tech</a></li>
+        </ul>
+        <ul class="mt-6 text-sm flex flex-wrap md:justify-end gap-x-5 gap-y-2">
+          <li><a href="ecrire.html" class="ink-link">Écrire pour nous</a></li>
+          <li><a href="contact.html" class="ink-link">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs opacity-60">© 2026 Les Heures Flâneuses</div>
+
+  </footer>
+
+  <script>
+    const SUPABASE_URL  = 'https://yrgylnmhqcimwgmjponj.supabase.co';
+    const SUPABASE_ANON = 'sb_publishable__SdwJpIWNVfPfVNX7eFc-w_mQA8av6H';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const CAT_META = {
+      'mode':       { label:'Mode',                desc:'Pièces incontournables, tendances et adresses mode sélectionnées avec soin.',  text:'#A82E12', bg:'#FBDDD2', emoji:'✨' },
+      'sport':      { label:'Tech',   desc:'Gadgets, objets connectés et innovations testés au quotidien.',         text:'#8F4308', bg:'#FDE7CC', emoji:'💻' },
+      'hotels':     { label:'Hôtels & Voyages',    desc:'Nos coups de cœur hôtels et adresses de voyage pour des escapades mémorables.', text:'#8F4308', bg:'#FDE7CC', emoji:'🏨' },
+    };
+    CAT_META['lifestyle'] = { label:'Lifestyle', desc:(window.SUBCATS && window.SUBCATS.lifestyle ? window.SUBCATS.lifestyle.desc : ''), text:'#A82E12', bg:'#FBDDD2', emoji:'✨' };
+    const CAT_STYLES = CAT_META;
+
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('cat');
+    if (!cat || !CAT_META[cat]) { window.location.href = '/'; }
+    const meta = CAT_META[cat] || CAT_META['mode'];
+
+    // Mise à jour du head
+    document.title = `Les Heures Flâneuses — ${meta.label}`;
+
+    // Sous-rubrique (facultative) : ?cat=mode&sub=montres
+    const SUB_ID = params.get('sub');
+    const SUB_LIST = (window.SUBCATS && window.SUBCATS[cat]) ? window.SUBCATS[cat].subs : [];
+    const SUB = SUB_ID ? SUB_LIST.find(x => x.id === SUB_ID) : null;
+
+    // En-tête de rubrique
+    if (SUB) {
+      const eb = document.getElementById('cat-eyebrow');
+      eb.innerHTML = `<a href="categorie.html?cat=${cat}" class="ink-link">← ${meta.label}</a>`;
+      eb.classList.remove('hidden');
+      document.getElementById('cat-title').textContent = SUB.label;
+      document.getElementById('cat-desc').textContent  = SUB.desc;
+      document.title = `Les Heures Flâneuses — ${meta.label} · ${SUB.label}`;
+    } else {
+      document.getElementById('cat-title').textContent = meta.label;
+      document.getElementById('cat-desc').textContent  = meta.desc;
+    }
+
+    // Highlight nav actif
+    document.querySelectorAll('.nc-links a').forEach(a => {
+      if (a.href.includes(`cat=${cat}`)) { a.style.color = 'var(--accent)'; a.style.fontWeight = '700'; }
+    });
+
+    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    const CACHE_KEY = `tf_cat3_${cat}`;
+    const GROUP_CATS = (window.SUBCATS && window.SUBCATS[cat]) ? window.SUBCATS[cat].cats : [cat];
+
+    function renderChips(all) {
+      const nav = document.getElementById('cat-subs');
+      const counts = {};
+      all.forEach(a => { if (a.sous_categorie) counts[a.sous_categorie] = (counts[a.sous_categorie] || 0) + 1; });
+      const subs = SUB_LIST.filter(x => counts[x.id]);
+      if (subs.length < 2) { nav.innerHTML = ''; return; }
+      nav.innerHTML = `<a class="cat-chip" href="categorie.html?cat=${cat}"${SUB ? '' : ' aria-current="page"'}>Tout <span class="n">${all.length}</span></a>`
+        + subs.map(x => `<a class="cat-chip" href="categorie.html?cat=${cat}&sub=${x.id}"${SUB && SUB.id === x.id ? ' aria-current="page"' : ''}>${x.label} <span class="n">${counts[x.id]}</span></a>`).join('');
+    }
+
+    function renderGrid(all) {
+      renderChips(all);
+      const data = SUB ? all.filter(a => a.sous_categorie === SUB.id) : all;
+      const grid = document.getElementById('articles-grid');
+      if (!data.length) {
+        grid.innerHTML = `<p class="col-span-3 text-center py-16" style="color:var(--ink-soft)">Aucun article dans cette rubrique pour l'instant.</p>`; return;
+      }
+      grid.innerHTML = data.map(a => {
+        const img = a.image_url
+          ? `<img src="${a.image_url}" alt="${a.titre}" class="w-full h-56 object-cover"/>`
+          : `<div class="h-56 flex items-center justify-center" style="background:var(--paper-raised)"><svg class="w-10 h-10" style="color:var(--line)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>`;
+        const date = new Date(a.date_creation).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+        const mins = a.temps_lecture ? `${a.temps_lecture} min` : '';
+        const m = window.cardTag(a);
+        return `
+          <article class="article-card reveal">
+            <div class="overflow-hidden mb-4" style="border:1px solid var(--line)">${img}</div>
+            <div class="flex items-center gap-3 mb-3">
+              <span class="px-2.5 py-1 text-xs font-semibold tracking-wide" style="color:${m.text};background:${m.bg}">${m.label}</span>
+              <span class="text-xs" style="color:var(--ink-soft)">${[date,mins].filter(Boolean).join(' · ')}</span>
+            </div>
+            <h2 class="font-display text-lg font-medium leading-snug mb-2" style="color:var(--ink)">
+              <a href="article.html?slug=${a.slug||a.id}" class="title-link">${a.titre}</a>
+            </h2>
+            <p class="text-sm leading-relaxed" style="color:var(--ink-soft)">${a.extrait||''}</p>
+          </article>`;
+      }).join('');
+    }
+
+    async function fetchArticles(silent) {
+      const { data, error } = await db
+        .from('articles')
+        .select('id,titre,extrait,image_url,slug,temps_lecture,date_creation,categorie,sous_categorie')
+        .eq('statut','publié')
+        .in('categorie', GROUP_CATS)
+        .order('date_creation',{ ascending:false });
+
+      if (error || !data) {
+        if (!silent) document.getElementById('articles-grid').innerHTML =
+          `<p class="col-span-3 text-center text-gray-400 py-16">Erreur de chargement.</p>`;
+        return;
+      }
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+      if (!silent) { renderGrid(data); window.revealAll && window.revealAll(); }
+    }
+
+    // Chargement des articles avec cache
+    async function loadArticles() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+        if (cached && Date.now() - cached.ts < CACHE_TTL) {
+          renderGrid(cached.data);
+          fetchArticles(true); // rafraîchissement silencieux
+          return;
+        }
+      } catch(e) {}
+      await fetchArticles(false);
+    }
+    loadArticles();
+
+    document.getElementById('menu-btn')?.addEventListener('click', () =>
+      document.getElementById('mobile-menu').classList.toggle('hidden'));
+  </script>
+</body>
+</html>
