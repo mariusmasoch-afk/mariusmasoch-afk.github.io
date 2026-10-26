@@ -81,8 +81,13 @@
 
     const params = new URLSearchParams(window.location.search);
     const email  = params.get('email') || '';
+    // Lien récent : jeton personnel (t). Ancien lien : adresse (email), conservé pour honorer les anciens mails.
+    const UUID   = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const token  = UUID.test((params.get('t') || '').trim()) ? params.get('t').trim() : '';
 
-    if (email) {
+    if (token) {
+      document.getElementById('email-display').textContent = 'ton adresse email';
+    } else if (email) {
       document.getElementById('email-display').textContent = email;
     } else {
       document.getElementById('email-display').textContent = 'adresse inconnue';
@@ -95,12 +100,13 @@
       btn.textContent = 'Traitement…';
       btn.disabled = true;
 
-      if (!email) {
-        showError('Aucune adresse email fournie.');
+      if (!token && !email) {
+        showError('Lien de désabonnement invalide.');
         return;
       }
 
-      const { error } = await db.from('abonnes').delete().eq('email', email);
+      // Fonction sécurisée côté base : la table reste fermée aux visiteurs.
+      const { error } = await db.rpc('desabonner', { p_token: token || null, p_email: token ? null : email });
 
       if (error) {
         showError(error.message || 'Erreur lors du désabonnement.');
