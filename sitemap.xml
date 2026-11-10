@@ -2,19 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://lesheuresflaneuses.fr/</loc>
-    <lastmod>2026-11-01</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle</loc>
-    <lastmod>2026-11-01</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle&amp;sub=accessoires</loc>
-    <lastmod>2026-11-01</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle&amp;sub=hotels</loc>
@@ -38,7 +38,12 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport&amp;sub=veille-techno</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-11-10</lastmod>
+  </url>
+  <url>
+    <loc>https://lesheuresflaneuses.fr/article.html?slug=avis-airback-flex-sac-cabine-compatible-sous-le-siege</loc>
+    <lastmod>2026-11-10</lastmod>
+    <image:image><image:loc>https://lesheuresflaneuses.fr/images/airback-flex/airback-flex-couverture.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/article.html?slug=avis-air-up-click-800ml-gourde-pods</loc>
@@ -52,7 +57,7 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/article.html?slug=mac-studio-m5-guide-avant-acheter</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-11-10</lastmod>
     <image:image><image:loc>https://lesheuresflaneuses.fr/images/mac-studio-m5/mac-studio-m5-cover.jpg</image:loc></image:image>
   </url>
   <url>
@@ -107,7 +112,7 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/article.html?slug=le-vent-a-la-francaise-le-cap-de-lelegance-responsable</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-11-10</lastmod>
     <image:image><image:loc>https://yrgylnmhqcimwgmjponj.supabase.co/storage/v1/object/public/images/covers/1788380258126-8txmxixrzux.jpg</image:loc></image:image>
   </url>
   <url>
