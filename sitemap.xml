@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://lesheuresflaneuses.fr/</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle</loc>
@@ -10,7 +10,7 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle&amp;sub=accessoires</loc>
@@ -34,11 +34,16 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport&amp;sub=objets-connectes</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-11-11</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport&amp;sub=veille-techno</loc>
     <lastmod>2026-11-10</lastmod>
+  </url>
+  <url>
+    <loc>https://lesheuresflaneuses.fr/article.html?slug=black-friday-2026-montres-objets-connectes-guide</loc>
+    <lastmod>2026-11-11</lastmod>
+    <image:image><image:loc>https://lesheuresflaneuses.fr/images/black-friday-2026/black-friday-2026-couverture.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/article.html?slug=avis-airback-flex-sac-cabine-compatible-sous-le-siege</loc>
