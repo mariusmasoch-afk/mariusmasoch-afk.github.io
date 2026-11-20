@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://lesheuresflaneuses.fr/</loc>
-    <lastmod>2026-11-15</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle</loc>
@@ -10,7 +10,7 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport</loc>
-    <lastmod>2026-11-15</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=lifestyle&amp;sub=accessoires</loc>
@@ -34,11 +34,16 @@
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport&amp;sub=objets-connectes</loc>
-    <lastmod>2026-11-15</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/categorie.html?cat=sport&amp;sub=veille-techno</loc>
     <lastmod>2026-11-10</lastmod>
+  </url>
+  <url>
+    <loc>https://lesheuresflaneuses.fr/article.html?slug=avis-shokz-openrun-pro-2-test-ecouteurs-conduction-osseuse</loc>
+    <lastmod>2026-11-20</lastmod>
+    <image:image><image:loc>https://lesheuresflaneuses.fr/images/shokz-openrun-pro-2/shokz-openrun-pro-2-couverture.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://lesheuresflaneuses.fr/article.html?slug=avis-remarkable-paper-pro-tablette-papier-couleur</loc>
